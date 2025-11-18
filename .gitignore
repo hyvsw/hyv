@@ -34,4 +34,6 @@ fc_*
 
 logs
 output.log
-
+hyv_server
+hyv_agent
+hyv_updater
