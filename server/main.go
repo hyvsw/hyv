@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -58,7 +59,7 @@ func main() {
 
 	d := &serverDaemon{}
 
-	d.db = InitializePgSQLDatabase("localhost", "fleetcmdr", os.Getenv("FC_PGSQL_USER"), os.Getenv("FC_PGSQL_PASS"))
+	d.db = InitializePgSQLDatabase(os.Getenv("PGSQL_HOST"), os.Getenv("PGSQL_DB"), os.Getenv("PGSQL_USER"), url.QueryEscape(os.Getenv("PGSQL_PASS")))
 	d.router = httprouter.New()
 	d.templates = parseTemplates()
 	d.agents = make(map[int]agent)

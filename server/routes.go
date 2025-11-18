@@ -69,7 +69,7 @@ func (d *serverDaemon) userAddHandler(w http.ResponseWriter, r *http.Request, pa
 	r.ParseForm()
 	pass := r.Form.Get("pass")
 
-	if r.Form.Get("userAddKey") != os.Getenv("FC_USER_ADD_KEY") {
+	if r.Form.Get("userAddKey") != os.Getenv("HYV_USER_ADD_KEY") {
 		log.Printf("failed to add user '%s': unauthorized", params.ByName("name"))
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -77,9 +77,9 @@ func (d *serverDaemon) userAddHandler(w http.ResponseWriter, r *http.Request, pa
 
 	log.Printf("Adding user '%s'", params.ByName("name"))
 
-	salt := os.Getenv("FC_PASS_SALT")
+	salt := os.Getenv("PASS_SALT")
 
-	rounds, err := strconv.Atoi(os.Getenv("FC_PASS_ROUNDS"))
+	rounds, err := strconv.Atoi(os.Getenv("PASS_ROUNDS"))
 	if checkError(err) {
 		return
 	}
@@ -186,9 +186,9 @@ func (d *serverDaemon) loginHandler(w http.ResponseWriter, r *http.Request, para
 
 	log.Printf("authenticating user '%s'", user)
 
-	salt := os.Getenv("FC_PASS_SALT")
+	salt := os.Getenv("PASS_SALT")
 
-	rounds, err := strconv.Atoi(os.Getenv("FC_PASS_ROUNDS"))
+	rounds, err := strconv.Atoi(os.Getenv("PASS_ROUNDS"))
 	if checkError(err) {
 		return
 	}
@@ -232,7 +232,7 @@ func (d *serverDaemon) loginHandler(w http.ResponseWriter, r *http.Request, para
 			return
 		}
 
-		http.SetCookie(w, &http.Cookie{Name: "session", Domain: "fleetcmdr.com", Value: theUUID.String()})
+		http.SetCookie(w, &http.Cookie{Name: "session", Domain: os.Getenv("HYV_DOMAIN"), Value: theUUID.String()})
 
 		log.Printf("Successfully authenticated '%s'", user)
 		log.Printf("Returning base page")

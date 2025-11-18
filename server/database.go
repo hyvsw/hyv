@@ -60,7 +60,7 @@ func InitializePgSQLDatabase(host, name, user, pass string) *sql.DB {
 	var db *sql.DB
 	var err error
 
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, pass, host, name)
+	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?", user, pass, host, name)
 	db, err = sql.Open("postgres", connStr)
 	if checkError(err) {
 		return nil
