@@ -1,4 +1,4 @@
-module fc_agent
+module hyv_agent
 
 go 1.21.0
 

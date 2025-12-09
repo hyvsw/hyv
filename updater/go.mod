@@ -1,4 +1,4 @@
-module fc_updater
+module hyv_updater
 
 go 1.21.0
 

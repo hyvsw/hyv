@@ -16,8 +16,7 @@ import (
 )
 
 func (d *serverDaemon) bindRoutes() {
-
-	d.router.GET("/", d.authHandler(d.baseHandler))
+	d.router.GET("/", d.baseHandler)
 	d.router.GET("/login", d.loginHandler)
 	d.router.GET("/logout", d.logoutHandler)
 	d.router.POST("/login", d.loginHandler)
@@ -49,11 +48,9 @@ func (d *serverDaemon) bindRoutes() {
 	d.router.GET("/api/v1/parts/commands/history/:agentID", d.commandHistoryForAgentHandler)
 	// All command results
 	d.router.GET("/api/v1/parts/command/output/:commandID", d.commandOutputRefreshHandler)
-
 }
 
 func (d *serverDaemon) baseHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	log.Printf("Returning index page")
 
 	var data struct{}
@@ -65,7 +62,6 @@ func (d *serverDaemon) baseHandler(w http.ResponseWriter, r *http.Request, param
 }
 
 func (d *serverDaemon) userAddHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	r.ParseForm()
 	pass := r.Form.Get("pass")
 
@@ -105,7 +101,6 @@ func (d *serverDaemon) userAddHandler(w http.ResponseWriter, r *http.Request, pa
 	}
 
 	log.Printf("Created user '%s'", params.ByName("name"))
-
 }
 
 func (d *serverDaemon) authHandler(h httprouter.Handle) httprouter.Handle {
@@ -169,7 +164,6 @@ func (d *serverDaemon) logoutHandler(w http.ResponseWriter, r *http.Request, par
 }
 
 func (d *serverDaemon) loginHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	if r.Method == http.MethodGet {
 		log.Printf("Returning login page")
 		var data struct{}
@@ -248,7 +242,6 @@ func (d *serverDaemon) loginHandler(w http.ResponseWriter, r *http.Request, para
 }
 
 func (d *serverDaemon) staticHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	fName := fmt.Sprintf("./static%s", params.ByName("path"))
 
 	log.Printf("Handling static request '%s'", fName)

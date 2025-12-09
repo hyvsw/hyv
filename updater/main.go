@@ -62,14 +62,16 @@ type semver struct {
 }
 
 // these control server variables are set with the build script using ldflags
-var controlServerDomain string
-var controlServerPort string
+var (
+	ControlServerHost string
+	ControlServerPort string
+)
 
 func newDaemon() *updaterDaemon {
 	d := &updaterDaemon{}
 	d.hc.Timeout = time.Minute * 2
 	d.hc.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	d.controlServer = fmt.Sprintf("%s:%s", controlServerDomain, controlServerPort)
+	d.controlServer = fmt.Sprintf("%s:%s", ControlServerHost, ControlServerPort)
 
 	return d
 }
@@ -77,16 +79,17 @@ func newDaemon() *updaterDaemon {
 var currentAgentVersion semver = semver{Major: 0, Minor: 0, Patch: 2}
 
 func main() {
-
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// log.Printf("host: '%s', port: '%s'", ControlServerHost, ControlServerPort)
 
 	// largely just going to sit around and wait until a newer agent is available
 	// checking every 24 hours for new agent
 	// localhost listener allows agent to poke and perform on-demand agent updates
 	ud := newDaemon()
-	ud.programUrl.Scheme = "https"
+	ud.programUrl.Scheme = "http"
 	ud.programUrl.Host = ud.controlServer
-	ud.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/fc_updater", runtime.GOOS, runtime.GOARCH)
+	ud.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_updater", runtime.GOOS, runtime.GOARCH)
 	ud.daemonCfg = getPlatformUpdaterConfig()
 	var err error
 	ud.daemon, err = service.New(ud, ud.daemonCfg)
@@ -95,9 +98,9 @@ func main() {
 	}
 
 	ad := &agentDaemon{}
-	ad.programUrl.Scheme = "https"
+	ad.programUrl.Scheme = "http"
 	ad.programUrl.Host = ud.controlServer
-	ad.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/fc_agent", runtime.GOOS, runtime.GOARCH)
+	ad.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_agent", runtime.GOOS, runtime.GOARCH)
 	ad.daemonCfg = getPlatformAgentConfig()
 	ad.daemon, err = service.New(ad, ad.daemonCfg)
 	if checkError(err) {
@@ -107,22 +110,22 @@ func main() {
 	if service.Interactive() {
 		err = ad.daemon.Stop()
 		if checkError(err) {
-			//return
+			// return
 		}
 
 		err = ad.daemon.Uninstall()
 		if checkError(err) {
-			//return
+			// return
 		}
 
 		err = download(ad.programUrl.String(), ad.daemonCfg.Executable)
 		if checkError(err) {
-			//return
+			// return
 		}
 
 		err = ad.daemon.Install()
 		if checkError(err) {
-			//return
+			// return
 		}
 
 		err = ad.daemon.Start()
@@ -134,10 +137,9 @@ func main() {
 	} else {
 
 		go func() {
-
 			err = ad.checkForUpdates()
 			if checkError(err) {
-				//return
+				// return
 			}
 			t := time.NewTicker(time.Hour * 25)
 			for {
@@ -145,7 +147,7 @@ func main() {
 				case <-t.C:
 					err = ad.checkForUpdates()
 					if checkError(err) {
-						//return
+						// return
 					}
 				}
 			}
@@ -156,7 +158,6 @@ func main() {
 			return
 		}
 	}
-
 }
 
 func (d *updaterDaemon) Start(s service.Service) error {
@@ -176,10 +177,9 @@ func (d *agentDaemon) Stop(s service.Service) error {
 }
 
 func download(endpoint, toPath string) (err error) {
-
 	hc := &http.Client{Timeout: time.Minute * 2}
 
-	log.Printf("Attempting to download from '%s'", endpoint)
+	log.Printf("Attempting to download from thing at place '%s'", endpoint)
 	resp, err := hc.Get(endpoint)
 	if checkError(err) {
 		return
@@ -193,12 +193,12 @@ func download(endpoint, toPath string) (err error) {
 
 	log.Printf("Received %s file", BytesToHuman(int64(len(bodyBytes))))
 
-	err = os.MkdirAll(filepath.Dir(toPath), 0700)
+	err = os.MkdirAll(filepath.Dir(toPath), 0o700)
 	if checkError(err) {
 		return
 	}
 
-	f, err := os.OpenFile(toPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0700)
+	f, err := os.OpenFile(toPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o700)
 	if checkError(err) {
 		return
 	}
@@ -227,7 +227,6 @@ func (d *updaterDaemon) installAgent() (err error) {
 	err = d.daemon.Install()
 	if checkError(err) {
 		if errors.Is(err, service.ErrNotInstalled) {
-
 		}
 		return
 	}
@@ -240,7 +239,6 @@ func (d *updaterDaemon) installAgent() (err error) {
 }
 
 func (d *agentDaemon) checkForUpdates() (err error) {
-
 	maxRetryWait, err := time.ParseDuration("8h")
 	if checkError(err) {
 		return
@@ -302,17 +300,17 @@ func (d *agentDaemon) checkForUpdates() (err error) {
 
 			err = d.daemon.Stop()
 			if checkError(err) {
-				//return
+				// return
 			}
 
 			err = d.daemon.Uninstall()
 			if checkError(err) {
-				//return
+				// return
 			}
 
 			err = d.daemon.Install()
 			if checkError(err) {
-				//return
+				// return
 			}
 
 			err = d.daemon.Start()
@@ -331,14 +329,12 @@ func (d *agentDaemon) checkForUpdates() (err error) {
 		log.Printf("Waiting %s to retry", retryWait.String())
 		time.Sleep(retryWait)
 	}
-
 }
 
 func (d *updaterDaemon) uninstallAgent() (err error) {
-
 	err = d.daemon.Stop()
 	if checkError(err) {
-		//return
+		// return
 	}
 
 	err = d.daemon.Uninstall()

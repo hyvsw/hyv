@@ -65,11 +65,6 @@ func main() {
 	d.agents = make(map[int]agent)
 	d.agentsLocker = &sync.RWMutex{}
 	d.currentAgentVersionLocker = &sync.RWMutex{}
-
-	// d.hs = http.Server{
-	// 	Addr:    ":2213",
-	// 	Handler: d.router,
-	// }
 	d.getLatestAgentVersion()
 
 	log.Printf("Binding routes...")
@@ -78,10 +73,6 @@ func main() {
 
 	log.Printf("Starting server...")
 	d.startServer()
-	// err := d.hs.ListenAndServe()
-	// if checkError(err) {
-	// 	return
-	// }
 
 	log.Printf("Shutting down...")
 

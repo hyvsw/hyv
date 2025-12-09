@@ -45,8 +45,10 @@ type agentDaemon struct {
 }
 
 // these control server variables are set with the build script using ldflags
-var controlServerDomain string
-var controlServerPort string
+var (
+	ControlServerHost string
+	ControlServerPort string
+)
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -67,7 +69,6 @@ func main() {
 	} else {
 		d.runAgent()
 	}
-
 }
 
 func (d *agentDaemon) runAgent() {

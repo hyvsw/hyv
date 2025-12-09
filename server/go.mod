@@ -1,4 +1,4 @@
-module fc_server
+module hyv_server
 
 go 1.21.0
 

@@ -6,14 +6,15 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-var currentAgentVersion semver = semver{Major: 0, Minor: 0, Patch: 2}
-var currentUpdaterVersion semver = semver{Major: 0, Minor: 0, Patch: 2}
+var (
+	currentAgentVersion   semver = semver{Major: 0, Minor: 0, Patch: 2}
+	currentUpdaterVersion semver = semver{Major: 0, Minor: 0, Patch: 2}
+)
 
 type semver struct {
 	Major int
@@ -39,7 +40,6 @@ func (v semver) String() string {
 }
 
 func (d *serverDaemon) versionCheckHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-
 	version := semver{}
 	var err error
 
@@ -68,11 +68,12 @@ func (d *serverDaemon) versionCheckHandler(w http.ResponseWriter, req *http.Requ
 			w.WriteHeader(201)
 		}
 	}
-
 }
 
 func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	app := params.ByName("App")
+
+	log.Printf("building %s", app)
 
 	var dir string
 	var cmd *exec.Cmd
@@ -85,13 +86,32 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 		log.Printf("unexpected app name '%s'", app)
 		return
 	}
-	cmd = exec.Command("./build.sh")
 
-	wd, err := os.Getwd()
-	if checkError(err) {
+	// supportedOSList := []string{"darwin", "windows", "linux"}
+	// supportedARCHList := []string{"arm64", "amd64"}
+	goos := "darwin"
+	goarch := "arm64"
+
+	err := os.Setenv("GOOS", goos)
+	if err != nil {
 		return
 	}
-	cmd.Dir = filepath.Join(wd, dir)
+
+	err = os.Setenv("GOARCH", goarch)
+	if err != nil {
+		return
+	}
+
+	executableName := app
+	if os.Getenv("GOOS") == "windows" {
+		executableName += ".exe"
+	}
+
+	cmd = exec.Command("/bin/bash", "-C", "build.sh")
+
+	cmd.Dir = dir
+
+	log.Printf("running: %s\nfrom %s", cmd.String(), cmd.Dir)
 
 	out, err := cmd.CombinedOutput()
 	if checkError(err) {
@@ -101,5 +121,4 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 	d.getLatestAgentVersion()
 
 	log.Printf("done building: %s", string(out))
-
 }

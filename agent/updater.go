@@ -23,10 +23,10 @@ func newDaemon() *agentDaemon {
 	d := &agentDaemon{}
 	d.hc.Timeout = time.Second * 30
 	d.hc.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	d.controlServer = fmt.Sprintf("%s:%s", controlServerDomain, controlServerPort)
+	d.controlServer = fmt.Sprintf("%s:%s", ControlServerHost, ControlServerPort)
 	d.programUrl.Scheme = "http"
 	d.programUrl.Host = d.controlServer
-	d.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/fc_updater", runtime.GOOS, runtime.GOARCH)
+	d.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_updater", runtime.GOOS, runtime.GOARCH)
 
 	d.version = semver{Major: versionMajor, Minor: versionMinor, Patch: versionPatch}
 
@@ -70,13 +70,11 @@ func deployInstaller() {
 	if checkError(err) {
 		return
 	}
-
 }
 
 func (d *agentDaemon) downloaUpdater() (err error) {
-
 	ud := newDaemon()
-	ud.programUrl.Path = fmt.Sprintf("/static/downloads/updater/%s/%s/fc_updater", runtime.GOOS, runtime.GOARCH)
+	ud.programUrl.Path = fmt.Sprintf("/static/downloads/updater/%s/%s/hyv_updater", runtime.GOOS, runtime.GOARCH)
 	ud.daemonCfg = getPlatformUpdaterConfig()
 
 	log.Printf("Attempting to download agent from '%s'", ud.programUrl.String())
@@ -115,13 +113,13 @@ func (d *agentDaemon) downloaUpdater() (err error) {
 		return
 	}
 
-	log.Printf("Installing fc_updater daemon")
+	log.Printf("Installing hyv_updater daemon")
 	err = ud.daemon.Install()
 	if checkError(err) {
 		return
 	}
 
-	log.Printf("Starting fc_updater daemon")
+	log.Printf("Starting hyv_updater daemon")
 	err = ud.daemon.Start()
 	if checkError(err) {
 		return

@@ -24,7 +24,6 @@ type navItem struct {
 }
 
 func (d *serverDaemon) leftNavHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	log.Printf("leftNav requested")
 
 	var navItems []navItem
@@ -46,7 +45,6 @@ func (d *serverDaemon) leftNavHandler(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (d *serverDaemon) viewAgentHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	var err error
 	id, err := strconv.Atoi(params.ByName("id"))
 	if checkError(err) {
@@ -341,7 +339,6 @@ func (d *serverDaemon) viewAgentHandler(w http.ResponseWriter, r *http.Request, 
 }
 
 func (d *serverDaemon) sendCommandHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-
 	req.ParseForm()
 
 	id, err := strconv.Atoi(params.ByName("id"))
@@ -356,7 +353,7 @@ func (d *serverDaemon) sendCommandHandler(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	log.Printf("Recieved command '%s' from agent %d", input, id)
+	log.Printf("Recieved command '%s' for agent %d", input, id)
 
 	var agentID int
 
@@ -374,7 +371,6 @@ func (d *serverDaemon) sendCommandHandler(w http.ResponseWriter, req *http.Reque
 }
 
 func (d *serverDaemon) commandOutputRefreshHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-
 	id, err := strconv.Atoi(params.ByName("commandID"))
 	if checkError(err) {
 		return
@@ -402,7 +398,6 @@ func (d *serverDaemon) commandOutputRefreshHandler(w http.ResponseWriter, req *h
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Set("Content-Length", strconv.Itoa(len(responseBytes)))
 	w.Write(responseBytes)
-
 }
 
 type Script struct {
@@ -423,7 +418,6 @@ type ScriptParameters struct {
 }
 
 func (d *serverDaemon) getScriptsForAgent(id int) ([]Script, error) {
-
 	q := "SELECT id, name, created_ts, modified_ts, notes, creator_id, description FROM script_library WHERE os = (SELECT os FROM agents WHERE id = $1)"
 	rows, err := d.db.QueryContext(context.Background(), q, id)
 	if checkError(err) {
@@ -438,5 +432,4 @@ func (d *serverDaemon) getScriptsForAgent(id int) ([]Script, error) {
 	}
 
 	return scripts, nil
-
 }
