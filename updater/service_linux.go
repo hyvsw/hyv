@@ -9,8 +9,8 @@ func logLocation() string {
 func getPlatformAgentConfig() *service.Config {
 	return &service.Config{
 		Name:        "hyv_agent",
-		DisplayName: "hyv agent",
-		Description: "Hyv Agent",
+		DisplayName: "HYV Agent",
+		Description: "HYV Agent",
 		Executable:  "/usr/bin/local/hyv/hyv_agent",
 	}
 }
@@ -18,8 +18,8 @@ func getPlatformAgentConfig() *service.Config {
 func getPlatformUpdaterConfig() *service.Config {
 	return &service.Config{
 		Name:        "hyv_updater",
-		DisplayName: "hyv updater",
-		Description: "Hyv Updater",
+		DisplayName: "HYV pdater",
+		Description: "HYV Updater",
 		Executable:  "/usr/bin/local/hyv/hyv_updater",
 	}
 }
