@@ -10,13 +10,27 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"howett.net/plist"
 )
+
+func getOrCreateAgentID() (string, error) {
+	path := `/etc/hyv/agent.id`
+	id, err := os.ReadFile(path)
+	if err == nil && len(id) > 0 {
+		return string(id), nil
+	}
+	newID := uuid.New().String()
+	os.MkdirAll(filepath.Dir(path), 0o644)
+	os.WriteFile(path, []byte(newID), 0o644)
+	return newID, nil
+}
 
 type Activity struct {
 	PowerMetrics                 darwinPowerMetrics

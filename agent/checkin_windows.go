@@ -6,8 +6,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"runtime"
+
+	"github.com/google/uuid"
 )
+
+func getOrCreateAgentID() (string, error) {
+	path := `C:\ProgramData\hyv\agent.id`
+	id, err := os.ReadFile(path)
+	if err == nil && len(id) > 0 {
+		return string(id), nil
+	}
+	newID := uuid.New().String()
+	os.MkdirAll(filepath.Dir(path), 0o644)
+	os.WriteFile(path, []byte(newID), 0o644)
+	return newID, nil
+}
 
 func (d *agentDaemon) checkin() {
 	var data checkinData
@@ -21,9 +37,19 @@ func (d *agentDaemon) checkin() {
 	}
 	if sd != nil {
 		data.Serial = sd.BIOS.SerialNumber
+		if sd.Computer.Manufacturer == "QEMU" {
+			data.Serial = sd.Product.UUID
+		}
 	}
-	if sd.Computer.Manufacturer == "QEMU" {
-		data.serial = sd.Product.UUID
+
+	var err error
+	data.HyvID, err = getOrCreateAgentID()
+	if checkError(err) {
+		return
+	}
+
+	if data.Serial == "" {
+		log.Printf("not permitted to checkin without a serial: %#v", sd)
 	}
 
 	b := &bytes.Buffer{}

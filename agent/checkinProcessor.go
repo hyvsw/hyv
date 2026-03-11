@@ -32,6 +32,7 @@ func (d *agentDaemon) checkinProcessor() {
 
 type checkinData struct {
 	ID       int
+	HyvID    string
 	Hostname string
 	OS       string
 	Serial   string

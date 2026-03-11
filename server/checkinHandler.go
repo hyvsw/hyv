@@ -15,6 +15,7 @@ import (
 
 type checkinData struct {
 	ID       int
+	HyvID    string
 	Hostname string
 	OS       string
 	Serial   string
@@ -42,7 +43,7 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	}
 
 	var q string
-	log.Printf("Agent (%d) with serial '%s' and version '%s'", cd.ID, cd.Serial, cd.Version.String())
+	log.Printf("Agent (%d) with serial '%s' and version '%s' (len: %d)", cd.ID, cd.Serial, cd.Version.String(), len(cd.Version.String()))
 
 	if cd.Serial != "" {
 		q = `SELECT id FROM agents WHERE serial = $1`
@@ -52,7 +53,7 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 		}
 
 		q = `UPDATE agents SET version = $1 WHERE serial = $2`
-		_, err = d.db.ExecContext(context.Background(), q, cd.Serial, cd.Version.String())
+		_, err = d.db.ExecContext(context.Background(), q, cd.Version.String(), cd.Serial)
 		if checkError(err) {
 			return
 		}
@@ -63,11 +64,12 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	if cd.ID == 0 {
 		log.Printf("Agent with serial '%s' checked in with invalid id 0", cd.Serial)
 
-		q = "INSERT INTO agents (serial, os) VALUES ($1,$2) RETURNING id"
-		err = d.db.QueryRowContext(context.Background(), q, cd.Serial, cd.OS).Scan(&cd.ID)
-		if checkError(err) {
-			return
-		}
+		return
+		// q = "INSERT INTO agents (serial, os) VALUES ($1,$2) RETURNING id"
+		// err = d.db.QueryRowContext(context.Background(), q, cd.Serial, cd.OS).Scan(&cd.ID)
+		// if checkError(err) {
+		// 	return
+		// }
 	}
 
 	// log.Printf("SELECT input, c_uuid FROM commands WHERE agent_id = %d AND delivered_ts IS NULL AND scheduled_ts < NOW() ORDER BY scheduled_ts ASC", cd.ID)
@@ -213,8 +215,8 @@ func (d *serverDaemon) systemDataHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	// q := "INSERT INTO agents (id, serial, os, hostname) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE os = ?, hostname = ?"
-	q := `INSERT INTO agents (id, serial, os, host_name, system_data) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (serial) DO UPDATE SET os = $6, host_name = $7, system_data = $8  RETURNING id`
-	err = d.db.QueryRowContext(context.Background(), q, cd.ID, cd.Serial, cd.OS, cd.Hostname, string(jsonBytes), cd.OS, cd.Hostname, string(jsonBytes)).Scan(&assignedID)
+	q := `INSERT INTO agents (serial, os, host_name, system_data,hyv_uuid) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (serial) DO UPDATE SET os = $6, host_name = $7, system_data = $8, hyv_uuid = $9  RETURNING id`
+	err = d.db.QueryRowContext(context.Background(), q, cd.Serial, cd.OS, cd.Hostname, string(jsonBytes), cd.HyvID, cd.OS, cd.Hostname, string(jsonBytes), cd.HyvID).Scan(&assignedID)
 	if checkError(err) {
 		return
 	}

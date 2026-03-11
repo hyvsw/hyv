@@ -26,6 +26,7 @@ func (v semver) JSON() string {
 
 type agentDaemon struct {
 	ID                    int
+	HyvID                 string
 	hostname              string
 	daemonCfg             *service.Config
 	daemon                service.Service
@@ -60,6 +61,12 @@ func main() {
 	d.doneStreamingChan = make(chan int, 1)
 
 	log.Printf("Agent version %s starting...", d.version.String())
+
+	var err error
+	d.HyvID, err = getOrCreateAgentID()
+	if checkError(err) {
+		return
+	}
 
 	go d.commandProcessor()
 

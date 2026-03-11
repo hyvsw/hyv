@@ -7,8 +7,24 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"path/filepath"
 	"runtime"
+
+	"github.com/google/uuid"
 )
+
+func getOrCreateAgentID() (string, error) {
+	path := `/etc/hyv/agent.id`
+	id, err := os.ReadFile(path)
+	if err == nil && len(id) > 0 {
+		return string(id), nil
+	}
+	newID := uuid.New().String()
+	os.MkdirAll(filepath.Dir(path), 0o644)
+	os.WriteFile(path, []byte(newID), 0o644)
+	return newID, nil
+}
 
 type checkinResponse struct {
 	ID             int
