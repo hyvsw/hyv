@@ -3,7 +3,7 @@ Remote Monitoring and Management (RMM) Platform
 
 # TODO
 - [ ] Database first-time setup
-- [ ] Building Agent/Updater
+- [X] Building Agent/Updater
 - [X] Mac Agent
     - [X] Runs as service
     - [X] Collects basic inventory

@@ -10,7 +10,6 @@ import (
 )
 
 func run(command string) (result string, err error) {
-
 	// According to...
 	// https://stackoverflow.com/questions/50809752/golang-invoking-powershell-exe-always-returns-ascii-characters
 	// theres some possiblility we'd need to establish a codepage value for each command
@@ -23,7 +22,7 @@ func run(command string) (result string, err error) {
 	if checkError(err) {
 		return
 	}
-	//log.Printf("%+v", args)
+	// log.Printf("%+v", args)
 
 	// var cmd *exec.Cmd
 	// if len(args) == 1 {
@@ -34,6 +33,7 @@ func run(command string) (result string, err error) {
 
 	out, err := cmd.CombinedOutput()
 	if checkError(err) {
+		log.Printf("error: Output: %s", string(out))
 		return "", err
 	}
 

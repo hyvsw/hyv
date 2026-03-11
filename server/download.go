@@ -19,12 +19,15 @@ func (d *serverDaemon) downloadAppHandler(w http.ResponseWriter, r *http.Request
 
 	extensionArg := ""
 	if osArg == "windows" {
-		extensionArg = "exe"
+		extensionArg = ".exe"
 	}
-	f, err := os.Open(fmt.Sprintf("static/downloads/%s/%s/%s/hyv_%s%s", appArg, osArg, archArg, appArg, extensionArg))
+	f, err := os.Open(fmt.Sprintf("static/downloads/%s/%s/hyv_%s%s", osArg, archArg, appArg, extensionArg))
 	if checkError(err) {
 		return
 	}
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="hyv_%s%s"`, appArg, extensionArg))
+	w.Header().Set("Content-Type", "application/octet-stream")
 
 	n, err := io.Copy(w, f)
 	if checkError(err) {
