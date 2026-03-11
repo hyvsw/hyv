@@ -168,7 +168,9 @@ func (d *serverDaemon) systemDataHandler(w http.ResponseWriter, r *http.Request,
 	defer r.Body.Close()
 
 	var aspo AppleSystemProfilerOutput
+	var wsd *windowsSystemData
 	gob.Register(aspo)
+	gob.Register(wsd)
 
 	err = gd.Decode(&cd)
 	if checkError(err) {
@@ -182,11 +184,33 @@ func (d *serverDaemon) systemDataHandler(w http.ResponseWriter, r *http.Request,
 
 	log.Printf("Checkin with system data: %+v", cd)
 
-	aspo = cd.Payload.(AppleSystemProfilerOutput)
-
-	log.Printf("Agent with serial '%s'", aspo.SPHardwareDataType[0].SerialNumber)
+	switch payload := cd.Payload.(type) {
+	case AppleSystemProfilerOutput:
+		// handle Apple
+		aspo = cd.Payload.(AppleSystemProfilerOutput)
+		log.Printf("Agent with serial '%s'", aspo.SPHardwareDataType[0].SerialNumber)
+		log.Printf("Apple system data: %+v", payload)
+		cd.Serial = aspo.SPHardwareDataType[0].SerialNumber
+	case *windowsSystemData:
+		// handle Windows
+		wsd = cd.Payload.(*windowsSystemData)
+		serial := wsd.BIOS.SerialNumber
+		if wsd.Computer.Manufacturer == "QEMU" {
+			serial = wsd.Product.UUID
+		}
+		cd.Serial = serial
+		log.Printf("Agent with serial '%s'", serial)
+		log.Printf("Windows system data: %+v", payload)
+	default:
+		log.Printf("Unknown payload type: %T", payload)
+	}
 
 	var assignedID int
+
+	if cd.Serial == "" {
+		log.Print("blank serial is unacceptable")
+		return
+	}
 
 	// q := "INSERT INTO agents (id, serial, os, hostname) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE os = ?, hostname = ?"
 	q := `INSERT INTO agents (id, serial, os, host_name, system_data) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (serial) DO UPDATE SET os = $6, host_name = $7, system_data = $8  RETURNING id`

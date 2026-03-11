@@ -10,7 +10,6 @@ import (
 )
 
 func (d *agentDaemon) checkin() {
-
 	var data checkinData
 
 	data.ID = d.ID
@@ -22,6 +21,9 @@ func (d *agentDaemon) checkin() {
 	}
 	if sd != nil {
 		data.Serial = sd.BIOS.SerialNumber
+	}
+	if sd.Computer.Manufacturer == "QEMU" {
+		data.serial = sd.Product.UUID
 	}
 
 	b := &bytes.Buffer{}
@@ -36,11 +38,9 @@ func (d *agentDaemon) checkin() {
 		return
 	}
 	defer resp.Body.Close()
-
 }
 
-func (d *agentDaemon) getSystemData() (data *systemData, err error) {
-
+func (d *agentDaemon) getSystemData() (data *windowsSystemData, err error) {
 	// use powershell to collect system data
 	//
 	jsonData, err := run(`[ordered]@{
@@ -51,7 +51,7 @@ func (d *agentDaemon) getSystemData() (data *systemData, err error) {
   Product = Get-CimInstance Win32_ComputerSystemProduct | Select-Object UUID
 } | ConvertTo-Json -Depth 3`)
 
-	sd := &systemData{}
+	sd := &windowsSystemData{}
 
 	err = json.Unmarshal([]byte(jsonData), sd)
 	if checkError(err) {
@@ -85,17 +85,17 @@ func (d *agentDaemon) sendSystemData() {
 	}
 	data.Payload = d.systemData
 	data.Version = d.version
-	sd, err := d.getSystemData()
-	if checkError(err) {
-		return
-	}
-	if sd == nil {
-		log.Printf("System data is nil")
-		return
-	}
+	// sd, err := d.getSystemData()
+	// if checkError(err) {
+	// 	return
+	// }
+	// if sd == nil {
+	// 	log.Printf("System data is nil")
+	// 	return
+	// }
 
 	// log.Printf("Got system data (took %s): %+v", time.Since(start).String(), d.getSystemData())
-	//log.Printf("System data: %+v", d.getSystemData())
+	// log.Printf("System data: %+v", d.getSystemData())
 
 	b := &bytes.Buffer{}
 	gob.Register(data)
@@ -125,7 +125,6 @@ func (d *agentDaemon) sendSystemData() {
 	log.Printf("Response: %#v", cr)
 
 	d.ID = cr.ID
-
 }
 
 type checkinResponse struct {
@@ -134,8 +133,7 @@ type checkinResponse struct {
 	StreamActivity bool
 }
 
-func readSystemData() (*systemData, error) {
-
+func readSystemData() (*windowsSystemData, error) {
 	// jsonData, err := run(fmt.Sprintf("get-computerinfo | convertto-json"))
 	// if checkError(err) {
 	// 	return nil, err
@@ -149,7 +147,7 @@ func readSystemData() (*systemData, error) {
   Product = Get-CimInstance Win32_ComputerSystemProduct | Select-Object UUID
 } | ConvertTo-Json -Depth 3`)
 
-	si := &systemData{}
+	si := &windowsSystemData{}
 
 	err = json.Unmarshal([]byte(jsonData), si)
 	if checkError(err) {
@@ -159,7 +157,7 @@ func readSystemData() (*systemData, error) {
 	return si, nil
 }
 
-type systemData struct {
+type windowsSystemData struct {
 	BIOS struct {
 		SerialNumber      string
 		SMBIOSBIOSVersion string

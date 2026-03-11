@@ -4,8 +4,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"unicode"
 )
 
@@ -15,7 +17,7 @@ func run(command string) (result string, err error) {
 	// theres some possiblility we'd need to establish a codepage value for each command
 	// command = fmt.Sprintf(`powershell -c chcp 65001 > $null; "%s")`, command)
 
-	command = fmt.Sprintf(`powershell -c "%s")`, command)
+	command = fmt.Sprintf(`powershell -c "%s"`, command)
 	log.Printf("Running command \"%s\"", command)
 
 	args, err := quotedStringSplit(command)
@@ -29,6 +31,13 @@ func run(command string) (result string, err error) {
 	// 	cmd = exec.Command(args[0])
 	// } else if len(args) > 1 {
 	cmd := exec.Command(args[0], args[1:]...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow: true, // don't flash a console window
+	}
+	cmd.Env = append(os.Environ(),
+		"PYTHONUTF8=1",
+		"PSDefaultParameterValues=*:Encoding=utf8",
+	)
 	// }
 
 	out, err := cmd.CombinedOutput()

@@ -2,6 +2,30 @@ package main
 
 import "time"
 
+type windowsSystemData struct {
+	BIOS struct {
+		SerialNumber      string
+		SMBIOSBIOSVersion string
+	}
+	Computer struct {
+		Manufacturer string
+		Model        string
+	}
+	BaseBoard struct {
+		Product      string
+		Manufacturer string
+		SerialNumber string
+	}
+	OS struct {
+		Caption        string
+		Version        string
+		OSArchitecture string
+	}
+	Product struct {
+		UUID string
+	}
+}
+
 // the struct into which darwinPowerMetrics plist output is parsed
 type darwinPowerMetrics struct {
 	IsDelta           bool        `plist:"is_delta"`

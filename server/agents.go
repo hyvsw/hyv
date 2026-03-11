@@ -75,22 +75,39 @@ func (d *serverDaemon) getAgentByID(id int) (agent, error) {
 			return a, err
 		}
 
-		var data AppleSystemProfilerOutput
+		// todo fix Apple
 
-		err = json.Unmarshal([]byte(a.SystemData), &data)
-		if checkError(err) {
-			return a, err
+		switch a.OS {
+		case "darwin":
+			// handle Apple
+			var data AppleSystemProfilerOutput
+			err = json.Unmarshal([]byte(a.SystemData), &data)
+			if checkError(err) {
+				return a, err
+			}
+			// log.Printf("SystemData: %#v", data)
+			cpuCountStrings := strings.Split(strings.TrimPrefix(data.SPHardwareDataType[0].NumberProcessors, "proc "), ":")
+			a.CPUCountEfficiency, err = strconv.Atoi(cpuCountStrings[2])
+			if checkError(err) {
+				return a, err
+			}
+			a.CPUCountPerformance, err = strconv.Atoi(cpuCountStrings[1])
+			if checkError(err) {
+				return a, err
+			}
+		case "windows":
+			// handle Windows
+			var data windowsSystemData
+			err = json.Unmarshal([]byte(a.SystemData), &data)
+			if checkError(err) {
+				return a, err
+			}
+
+		case "linux":
+		default:
+			log.Printf("Unknown OS: %s", a.OS)
 		}
-		// log.Printf("SystemData: %#v", data)
-		cpuCountStrings := strings.Split(strings.TrimPrefix(data.SPHardwareDataType[0].NumberProcessors, "proc "), ":")
-		a.CPUCountEfficiency, err = strconv.Atoi(cpuCountStrings[2])
-		if checkError(err) {
-			return a, err
-		}
-		a.CPUCountPerformance, err = strconv.Atoi(cpuCountStrings[1])
-		if checkError(err) {
-			return a, err
-		}
+
 		// log.Printf("Agent data: %#v", a)
 		d.agentsLocker.Lock()
 		d.agents[id] = a

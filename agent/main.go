@@ -46,8 +46,8 @@ type agentDaemon struct {
 
 // these control server variables are set with the build script using ldflags
 var (
-	ControlServerHost string
-	ControlServerPort string
+	controlServerHost string
+	controlServerPort string
 )
 
 func main() {

@@ -23,10 +23,14 @@ func newDaemon() *agentDaemon {
 	d := &agentDaemon{}
 	d.hc.Timeout = time.Second * 30
 	d.hc.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	d.controlServer = fmt.Sprintf("%s:%s", ControlServerHost, ControlServerPort)
+	d.controlServer = fmt.Sprintf("%s:%s", controlServerHost, controlServerPort)
 	d.programUrl.Scheme = "http"
 	d.programUrl.Host = d.controlServer
-	d.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_updater", runtime.GOOS, runtime.GOARCH)
+	extension := ""
+	if runtime.GOOS == "windows" {
+		extension = ".exe"
+	}
+	d.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_updater%s", runtime.GOOS, runtime.GOARCH, extension)
 
 	d.version = semver{Major: versionMajor, Minor: versionMinor, Patch: versionPatch}
 
