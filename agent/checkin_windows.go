@@ -20,8 +20,14 @@ func getOrCreateAgentID() (string, error) {
 		return string(id), nil
 	}
 	newID := uuid.New().String()
-	os.MkdirAll(filepath.Dir(path), 0o644)
-	os.WriteFile(path, []byte(newID), 0o644)
+	err = os.MkdirAll(filepath.Dir(path), 0o644)
+	if checkError(err) {
+		return "", err
+	}
+	err = os.WriteFile(path, []byte(newID), 0o644)
+	if checkError(err) {
+		return "", err
+	}
 	return newID, nil
 }
 
@@ -42,11 +48,12 @@ func (d *agentDaemon) checkin() {
 		}
 	}
 
-	var err error
 	data.HyvID, err = getOrCreateAgentID()
 	if checkError(err) {
 		return
 	}
+
+	log.Printf("HyvID is: %s", data.HyvID)
 
 	if data.Serial == "" {
 		log.Printf("not permitted to checkin without a serial: %#v", sd)
@@ -102,6 +109,12 @@ func (d *agentDaemon) sendSystemData() {
 
 	data.Hostname = output
 	data.OS = runtime.GOOS
+
+	data.HyvID, err = getOrCreateAgentID()
+	if checkError(err) {
+		return
+	}
+	log.Printf("HyvID is: %s", data.HyvID)
 
 	// start := time.Now()
 	log.Printf("Reading system data...")

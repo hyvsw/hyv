@@ -215,7 +215,7 @@ func (d *serverDaemon) systemDataHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	// q := "INSERT INTO agents (id, serial, os, hostname) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE os = ?, hostname = ?"
-	q := `INSERT INTO agents (serial, os, host_name, system_data,hyv_uuid) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (serial) DO UPDATE SET os = $6, host_name = $7, system_data = $8, hyv_uuid = $9  RETURNING id`
+	q := `INSERT INTO agents (serial, os, host_name, system_data,hyv_uuid) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (hyv_uuid) DO UPDATE SET os = $6, host_name = $7, system_data = $8, hyv_uuid = $9  RETURNING id`
 	err = d.db.QueryRowContext(context.Background(), q, cd.Serial, cd.OS, cd.Hostname, string(jsonBytes), cd.HyvID, cd.OS, cd.Hostname, string(jsonBytes), cd.HyvID).Scan(&assignedID)
 	if checkError(err) {
 		return
