@@ -6,14 +6,15 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
 
 var (
-	currentAgentVersion   semver = semver{Major: 0, Minor: 0, Patch: 2}
-	currentUpdaterVersion semver = semver{Major: 0, Minor: 0, Patch: 2}
+	currentAgentVersion   semver = semver{Major: 0, Minor: 0, Patch: 62}
+	currentUpdaterVersion semver = semver{Major: 0, Minor: 0, Patch: 5}
 )
 
 type semver struct {
@@ -73,52 +74,70 @@ func (d *serverDaemon) versionCheckHandler(w http.ResponseWriter, req *http.Requ
 func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	app := params.ByName("App")
 
-	log.Printf("building %s", app)
-
-	var dir string
-	var cmd *exec.Cmd
 	switch app {
 	case "agent":
-		dir = "../agent"
+		log.Printf("building %s", app)
 	case "updater":
-		dir = "../updater"
+		log.Printf("building %s", app)
 	default:
 		log.Printf("unexpected app name '%s'", app)
 		return
 	}
-
-	// supportedOSList := []string{"darwin", "windows", "linux"}
-	// supportedARCHList := []string{"arm64", "amd64"}
-	goos := "darwin"
-	goarch := "arm64"
-
-	err := os.Setenv("GOOS", goos)
-	if err != nil {
-		return
+	// cmd = exec.Command("./build.sh")
+	type osarch struct {
+		os   string
+		arch string
 	}
 
-	err = os.Setenv("GOARCH", goarch)
-	if err != nil {
-		return
+	var osarches []osarch
+	osarches = append(osarches, osarch{os: "darwin", arch: "arm64"})
+	osarches = append(osarches, osarch{os: "darwin", arch: "amd64"})
+	osarches = append(osarches, osarch{os: "linux", arch: "amd64"})
+	osarches = append(osarches, osarch{os: "linux", arch: "arm64"})
+	osarches = append(osarches, osarch{os: "windows", arch: "amd64"})
+	osarches = append(osarches, osarch{os: "windows", arch: "arm64"})
+
+	ldflags := fmt.Sprintf(
+		`-X main.controlServerHost=%s -X main.controlServerPort=%s`,
+		os.Getenv("HYV_CONTROL_SERVER_HOST"),
+		os.Getenv("HYV_CONTROL_SERVER_PORT"),
+	)
+
+	for _, oa := range osarches {
+
+		extension := ""
+		if oa.os == "windows" {
+			extension = ".exe"
+		}
+
+		staticDestDir, err := filepath.Abs(fmt.Sprintf("./static/downloads/%s/%s/hyv_%s%s", oa.os, oa.arch, app, extension))
+		if checkError(err) {
+			return
+		}
+
+		if err := os.MkdirAll(filepath.Dir(staticDestDir), 0o755); err != nil {
+			log.Printf("failed to create output directory: %w", err)
+			return
+		}
+
+		cmd := exec.Command("/usr/local/go/bin/go", "build", "-buildvcs=false", "-o", staticDestDir, "-ldflags", ldflags)
+		cmd.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", oa.os), fmt.Sprintf("GOARCH=%s", oa.arch))
+		agentPath, err := filepath.Abs("../agent")
+		if checkError(err) {
+			return
+		}
+		cmd.Dir = agentPath
+
+		log.Printf("build: %#v", cmd.Args)
+
+		out, err := cmd.CombinedOutput()
+		if checkError(err) {
+			log.Printf("out: %s", string(out))
+			return
+		}
+
+		d.getLatestAgentVersion()
+
+		log.Printf("done building: %s", string(out))
 	}
-
-	executableName := app
-	if os.Getenv("GOOS") == "windows" {
-		executableName += ".exe"
-	}
-
-	cmd = exec.Command("/bin/bash", "-C", "build.sh")
-
-	cmd.Dir = dir
-
-	log.Printf("running: %s\nfrom %s", cmd.String(), cmd.Dir)
-
-	out, err := cmd.CombinedOutput()
-	if checkError(err) {
-		return
-	}
-
-	d.getLatestAgentVersion()
-
-	log.Printf("done building: %s", string(out))
 }

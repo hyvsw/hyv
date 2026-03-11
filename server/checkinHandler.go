@@ -23,9 +23,6 @@ type checkinData struct {
 }
 
 func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
-	//var a agent
-
 	var cd checkinData
 
 	bodyBytes, err := io.ReadAll(r.Body)
@@ -50,6 +47,12 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	if cd.Serial != "" {
 		q = `SELECT id FROM agents WHERE serial = $1`
 		err = d.db.QueryRowContext(context.Background(), q, cd.Serial).Scan(&cd.ID)
+		if checkError(err) {
+			return
+		}
+
+		q = `UPDATE agents SET version = $1 WHERE serial = $2`
+		_, err = d.db.ExecContext(context.Background(), q, cd.Serial, cd.Version.String())
 		if checkError(err) {
 			return
 		}
@@ -133,7 +136,6 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	if checkError(err) {
 		return
 	}
-
 }
 
 func (d *serverDaemon) getLatestAgentVersion() {
@@ -143,7 +145,8 @@ func (d *serverDaemon) getLatestAgentVersion() {
 		patch int
 	)
 
-	err := d.db.QueryRowContext(context.Background(), "SELECT major, minor, patch FROM versions WHERE app = 'agent' ORDER BY major desc, minor desc, patch desc LIMIT 1").Scan(&major, &minor, &patch)
+	err := d.db.QueryRowContext(context.Background(), `SELECT major, minor, patch FROM versions WHERE app = 'agent' 
+		ORDER BY major desc, minor desc, patch desc LIMIT 1`).Scan(&major, &minor, &patch)
 	if checkError(err) {
 		return
 	}
@@ -154,9 +157,7 @@ func (d *serverDaemon) getLatestAgentVersion() {
 }
 
 func (d *serverDaemon) systemDataHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-
 	var cd checkinData
-
 	bodyBytes, err := io.ReadAll(r.Body)
 	if checkError(err) {
 		return
@@ -224,15 +225,12 @@ func (d *serverDaemon) systemDataHandler(w http.ResponseWriter, r *http.Request,
 	if checkError(err) {
 		return
 	}
-
 }
 
 func (d *serverDaemon) commandResultHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-
 	cmdResult := Command{}
 
 	gob.Register(cmdResult)
-
 	b := &bytes.Buffer{}
 
 	bodyBytes, err := io.ReadAll(req.Body)
@@ -258,7 +256,6 @@ func (d *serverDaemon) commandResultHandler(w http.ResponseWriter, req *http.Req
 	if checkError(err) {
 		return
 	}
-
 }
 
 type checkinResponse struct {

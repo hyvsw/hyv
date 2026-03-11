@@ -44,7 +44,7 @@
                 <div class="btn btn-danger float-right" hx-trigger="click" hx-delete="/api/v1/agent/{{.AgentData.ID}}/stream/activity" hx-swap="none" hx-on:click='document.getElementById("main-content").replaceChildren()'>Close</div>
             </td>
             <td>
-                <h3>{{ .AgentData.Name }}</h3>
+                <h3>{{ .AgentData.Name }} (hyv_agent {{ .AgentData.Version }})</h3>
             </td>
         </tr>
         <tr>

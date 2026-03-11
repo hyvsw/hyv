@@ -10,17 +10,19 @@ import (
 	"runtime"
 )
 
-type LinuxSystemData struct {
+type checkinResponse struct {
+	ID             int
+	Commands       []Command
+	StreamActivity bool
 }
 
+type LinuxSystemData struct{}
+
 func (d *agentDaemon) getSystemData() *LinuxSystemData {
-
 	return &LinuxSystemData{}
-
 }
 
 func (d *agentDaemon) checkin() {
-
 	var data checkinData
 
 	data.ID = d.ID
@@ -82,7 +84,6 @@ func (d *agentDaemon) checkin() {
 	for _, cmd := range cr.Commands {
 		d.commandChan <- cmd
 	}
-
 }
 
 func (d *agentDaemon) sendSystemData() {

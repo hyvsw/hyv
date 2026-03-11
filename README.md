@@ -1,6 +1,19 @@
 # HYV
 Remote Monitoring and Management (RMM) Platform
 
+# TODO
+- [ ] Database first-time setup
+- [ ] Building Agent/Updater
+- [X] Mac Agent
+    - [X] Runs as service
+    - [X] Collects basic inventory
+    - [X] Executes remote commands
+    - [X] Streams system performance data
+- [ ] Windows Agent
+    - [ ] Runs as service
+    - [ ] Collects basic inventory
+    - [ ] Executes remote commands
+
 # Environment Variables
 - For connecting to DB
   - PGSQL_USER='postgres'

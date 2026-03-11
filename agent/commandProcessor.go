@@ -19,6 +19,7 @@ func (d *agentDaemon) commandProcessor() {
 		case c := <-d.commandChan:
 
 			if c.Special > 0 {
+				log.Print("Executing special %v", c.Special)
 				d.executeSpecial(c.Special)
 			} else {
 				log.Printf("Received command %s: '%s'", c.UUID, c.Input)
@@ -28,14 +29,13 @@ func (d *agentDaemon) commandProcessor() {
 				}
 				d.returnCommandResult(c)
 			}
-
 		}
 	}
 }
 
 func (d *agentDaemon) executeSpecial(sc specialCommand) error {
 	switch sc {
-	case specialUpgrade:
+	case specialCmdUpgrade:
 		log.Printf("Executing agent upgrade")
 		err := d.upgradeAgent()
 		if err != nil {
@@ -47,7 +47,6 @@ func (d *agentDaemon) executeSpecial(sc specialCommand) error {
 }
 
 func (d *agentDaemon) upgradeAgent() (err error) {
-
 	log.Printf("Attempting to download updater from '%s'", d.programUrl.String())
 	resp, err := d.hc.Get(d.programUrl.String())
 	if checkError(err) {
@@ -126,7 +125,6 @@ func (d *agentDaemon) upgradeAgent() (err error) {
 }
 
 func (d *agentDaemon) returnCommandResult(c Command) {
-
 	b := &bytes.Buffer{}
 
 	gob.Register(c)

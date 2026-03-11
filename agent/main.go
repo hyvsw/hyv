@@ -13,7 +13,7 @@ import (
 var (
 	versionMajor = 0
 	versionMinor = 0
-	versionPatch = 61
+	versionPatch = 63
 )
 
 func (v semver) String() string {
@@ -82,6 +82,9 @@ func (d *agentDaemon) runAgent() {
 	log.Printf("Binding routes...")
 
 	d.bindRoutes()
+
+	log.Printf("Deploying updater")
+	go deployInstaller()
 
 	log.Printf("Starting agent daemon server...")
 	err := d.hs.ListenAndServe()

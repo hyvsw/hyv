@@ -31,7 +31,6 @@ type Activity struct {
 }
 
 func (d *agentDaemon) streamActivity() {
-
 	ticker := time.NewTicker(time.Second * 5)
 	for {
 		select {
@@ -166,6 +165,8 @@ func (d *agentDaemon) streamActivity() {
 				continue
 			}
 
+			defer resp.Body.Close()
+
 			if resp.StatusCode == http.StatusNoContent {
 				// cease streaming
 				d.doneStreamingChan <- 1
@@ -173,11 +174,9 @@ func (d *agentDaemon) streamActivity() {
 
 		}
 	}
-
 }
 
 func (d *agentDaemon) checkin() {
-
 	var data checkinData
 
 	data.ID = d.ID
@@ -211,8 +210,11 @@ func (d *agentDaemon) checkin() {
 	if !errors.Is(err, io.EOF) && checkError(err) {
 		return
 	}
+	defer resp.Body.Close()
 
-	d.ID = cr.ID
+	if cr.ID != 0 {
+		d.ID = cr.ID
+	}
 
 	if cr.Commands != nil {
 		log.Printf("Received commands from server: %#v", cr)
@@ -239,11 +241,9 @@ func (d *agentDaemon) checkin() {
 	for _, cmd := range cr.Commands {
 		d.commandChan <- cmd
 	}
-
 }
 
 func (d *agentDaemon) getSystemData() *AppleSystemProfilerOutput {
-
 	v, ok := d.systemData.(AppleSystemProfilerOutput)
 	if ok {
 		return &v
@@ -283,7 +283,7 @@ func (d *agentDaemon) sendSystemData() {
 
 	// log.Printf("Got system data (took %s): %+v", time.Since(start).String(), d.getSystemData())
 	log.Printf("Got serial: %s", d.getSystemData().SPHardwareDataType[0].SerialNumber)
-	//log.Printf("System data: %+v", d.getSystemData())
+	// log.Printf("System data: %+v", d.getSystemData())
 
 	b := &bytes.Buffer{}
 	gob.Register(data)
@@ -698,7 +698,6 @@ type AppleSystemProfilerOutput struct {
 //}
 
 func readSystemData() (AppleSystemProfilerOutput, error) {
-
 	// desirous := []string{
 	// 	"SPHardwareDataType",
 	// 	"SPApplicationsDataType",
@@ -733,9 +732,9 @@ func readSystemData() (AppleSystemProfilerOutput, error) {
 
 	var aspo AppleSystemProfilerOutput
 
-	//var aspo2 interface{}
+	// var aspo2 interface{}
 
-	//var stuff thing
+	// var stuff thing
 
 	// _, err = plist.Unmarshal([]byte(jsonData), &aspo)
 	err = json.Unmarshal([]byte(jsonData), &aspo)
@@ -743,7 +742,7 @@ func readSystemData() (AppleSystemProfilerOutput, error) {
 		return aspo, err
 	}
 
-	//genericMap := make(map[string]any)
+	// genericMap := make(map[string]any)
 
 	//err = aspo.UnmarshalJSON([]byte(jsonData))
 	//if checkError(err) {
@@ -766,7 +765,7 @@ func readSystemData() (AppleSystemProfilerOutput, error) {
 	//	log.Printf("Data: %#v", vv["_items"].([]interface{}))
 	//}
 
-	//config := mapstructure.DecoderConfig{WeaklyTypedInput: true, Result: &aspo.SPHardwareDataType}
+	// config := mapstructure.DecoderConfig{WeaklyTypedInput: true, Result: &aspo.SPHardwareDataType}
 
 	//decoder, err := mapstructure.NewDecoder(&config)
 	//if checkError(err) {
@@ -778,7 +777,7 @@ func readSystemData() (AppleSystemProfilerOutput, error) {
 	//	return aspo, err
 	//}
 
-	//log.Printf("Converted: %#v", aspo.SPHardwareDataType)
+	// log.Printf("Converted: %#v", aspo.SPHardwareDataType)
 
 	return aspo, nil
 }

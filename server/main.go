@@ -34,7 +34,6 @@ func parseTemplates() *template.Template {
 	}}
 	templ := template.New("").Funcs(fm)
 	err := filepath.Walk("./templates", func(path string, info os.FileInfo, err error) error {
-
 		if info.IsDir() {
 			return nil
 		}
@@ -45,7 +44,6 @@ func parseTemplates() *template.Template {
 
 		return err
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -54,7 +52,6 @@ func parseTemplates() *template.Template {
 }
 
 func main() {
-
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	d := &serverDaemon{}
@@ -71,9 +68,8 @@ func main() {
 
 	d.bindRoutes()
 
-	log.Printf("Starting server...")
+	log.Printf("Starting hyv server...")
 	d.startServer()
 
 	log.Printf("Shutting down...")
-
 }

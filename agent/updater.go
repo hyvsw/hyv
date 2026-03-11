@@ -72,7 +72,7 @@ func deployInstaller() {
 	}
 }
 
-func (d *agentDaemon) downloaUpdater() (err error) {
+func (d *agentDaemon) downloadUpdater() (err error) {
 	ud := newDaemon()
 	ud.programUrl.Path = fmt.Sprintf("/static/downloads/updater/%s/%s/hyv_updater", runtime.GOOS, runtime.GOARCH)
 	ud.daemonCfg = getPlatformUpdaterConfig()

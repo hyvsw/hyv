@@ -2,11 +2,6 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 # Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
 
 # Test binary, built with `go test -c`
 *.test
@@ -17,23 +12,12 @@
 # Dependency directories (remove the comment below to include it)
 vendor/
 server/vendor/
+server/static/downloads/*
 
 # Go workspace file
 go.work
 
-fc_server
-fc_agent
-fc_updater
-updater/fc_updater
-*.sh
+server/hyv_server
 *.xml
 *.json
 .ds_store
-.idea
-fc_*
-
-logs
-output.log
-hyv_server
-hyv_agent
-hyv_updater
