@@ -128,6 +128,7 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	d.currentAgentVersionLocker.RUnlock()
 
 	if cd.Version.isOlderThan(currentAgentVersion) {
+		log.Printf("Yes, agent '%d' has old version '%s', issuing upgrade command", cd.ID, cd.Version.String())
 		cr.Commands = append(cr.Commands, Command{Special: SpecialUpgrade})
 	}
 

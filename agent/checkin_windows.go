@@ -71,6 +71,21 @@ func (d *agentDaemon) checkin() {
 		return
 	}
 	defer resp.Body.Close()
+
+	var cr checkinResponse
+	gob.Register(cr)
+	gd := gob.NewDecoder(resp.Body)
+
+	err = gd.Decode(&cr)
+	if checkError(err) {
+		return
+	}
+
+	log.Printf("Response: %#v", cr)
+
+	for _, c := range cr.Commands {
+		d.commandChan <- c
+	}
 }
 
 func (d *agentDaemon) getSystemData() (data *windowsSystemData, err error) {

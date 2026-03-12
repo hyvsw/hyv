@@ -15,6 +15,7 @@ const (
 func (d *agentDaemon) checkinProcessor() {
 	t := time.NewTicker(time.Minute)
 	systemDataCheckinTicker := time.NewTimer(time.Until(d.lastSystemDataCheckin.Add(time.Hour)))
+	d.checkin()
 
 	for {
 		select {

@@ -64,6 +64,19 @@ func (d *agentDaemon) upgradeAgent() (err error) {
 	ud := newDaemon()
 	ud.daemonCfg = getPlatformUpdaterConfig()
 
+	// log.Printf("daemon stop")
+
+	err = ud.daemon.Stop()
+	if checkError(err) {
+		return
+	}
+	// log.Printf("daemon uninstall")
+
+	err = ud.daemon.Uninstall()
+	if checkError(err) {
+		return
+	}
+
 	f, err := os.Create(ud.daemonCfg.Executable)
 	if checkError(err) {
 		return
@@ -93,18 +106,6 @@ func (d *agentDaemon) upgradeAgent() (err error) {
 		return
 	}
 
-	// log.Printf("daemon stop")
-
-	err = ud.daemon.Stop()
-	if checkError(err) {
-		return
-	}
-	// log.Printf("daemon uninstall")
-
-	err = ud.daemon.Uninstall()
-	if checkError(err) {
-		return
-	}
 	// log.Printf("daemon install")
 
 	err = ud.daemon.Install()

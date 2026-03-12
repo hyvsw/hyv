@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"runtime"
 	"time"
 
 	"github.com/kardianos/service"
@@ -13,7 +15,7 @@ import (
 var (
 	versionMajor = 0
 	versionMinor = 1
-	versionPatch = 0
+	versionPatch = 6
 )
 
 func (v semver) String() string {
@@ -53,6 +55,15 @@ var (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	if runtime.GOOS == "windows" {
+		logFilePath := "C:\\ProgramData\\hyv\\hyv_agent.log"
+		logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		if checkError(err) {
+			return
+		}
+		log.SetOutput(logFile)
+	}
 
 	d := newDaemon()
 	log.SetPrefix("v" + d.version.String() + ": ")

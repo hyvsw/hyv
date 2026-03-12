@@ -27,7 +27,7 @@ func newDaemon() *agentDaemon {
 	d.controlServer = fmt.Sprintf("%s:%s", controlServerHost, controlServerPort)
 	d.programUrl.Scheme = "http"
 	d.programUrl.Host = d.controlServer
-	d.programUrl.Path = fmt.Sprintf("/api/v1/downloads/agent/%s/%s", runtime.GOOS, runtime.GOARCH)
+	d.programUrl.Path = fmt.Sprintf("/api/v1/download/agent/%s/%s", runtime.GOOS, runtime.GOARCH)
 
 	d.version = semver{Major: versionMajor, Minor: versionMinor, Patch: versionPatch}
 
@@ -61,7 +61,7 @@ func (d *agentDaemon) deployInstaller() {
 
 func (d *agentDaemon) downloadUpdater() (err error) {
 	ud := newDaemon()
-	ud.programUrl.Path = fmt.Sprintf("/api/v1/downloads/updater/%s/%s", runtime.GOOS, runtime.GOARCH)
+	ud.programUrl.Path = fmt.Sprintf("/api/v1/download/updater/%s/%s", runtime.GOOS, runtime.GOARCH)
 	ud.daemonCfg = getPlatformUpdaterConfig()
 
 	log.Printf("Attempting to download agent from '%s'", ud.programUrl.String())

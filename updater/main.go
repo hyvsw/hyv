@@ -158,7 +158,7 @@ func main() {
 		log.Printf("HYV Updater Service started")
 
 		err = ad.daemon.Stop()
-		if !strings.Contains(err.Error(), "does not exist as an installed service") && checkError(err) {
+		if err != nil && !strings.Contains(err.Error(), "does not exist as an installed service") && checkError(err) {
 			// return
 		}
 
