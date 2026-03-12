@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/kardianos/service"
@@ -73,10 +72,24 @@ func main() {
 
 	if service.Interactive() {
 		d.debug = true
-		d.runAgent()
-	} else {
-		d.runAgent()
+		d.deployInstaller()
+		return
 	}
+
+	go d.runAgent()
+
+	err = d.daemon.Run()
+	if checkError(err) {
+		return
+	}
+}
+
+func (d *agentDaemon) Start(s service.Service) error {
+	return nil
+}
+
+func (d *agentDaemon) Stop(s service.Service) error {
+	return nil
 }
 
 func (d *agentDaemon) runAgent() {
@@ -91,20 +104,8 @@ func (d *agentDaemon) runAgent() {
 
 	d.bindRoutes()
 
-	log.Printf("Stopping agent daemon")
-	err := d.Stop(d.daemon)
-	if checkError(err) {
-		// return
-	}
-
-	d.deployInstaller()
-
-	if service.Interactive() {
-		log.Print("running interactive, exiting")
-		os.Exit(0)
-	}
 	log.Printf("Starting agent daemon server...")
-	err = d.hs.ListenAndServe()
+	err := d.hs.ListenAndServe()
 	if checkError(err) {
 		return
 	}

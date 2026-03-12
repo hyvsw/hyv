@@ -41,24 +41,6 @@ func newDaemon() *agentDaemon {
 	return d
 }
 
-func (d *agentDaemon) Start(s service.Service) error {
-	err := s.Start()
-	if checkError(err) {
-		return err
-	}
-
-	return nil
-}
-
-func (d *agentDaemon) Stop(s service.Service) error {
-	err := s.Stop()
-	if checkError(err) {
-		return err
-	}
-
-	return nil
-}
-
 func (d *agentDaemon) deployInstaller() {
 	log.Printf("deploying agent installer")
 	var err error

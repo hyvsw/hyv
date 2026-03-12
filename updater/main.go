@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/kardianos/service"
@@ -129,8 +130,35 @@ func main() {
 	ad := newAgentDaemon()
 
 	if service.Interactive() {
-		err = ad.daemon.Stop()
+
+		err = ud.daemon.Stop()
 		if checkError(err) {
+			// return
+		}
+
+		err = download(ud.programUrl.String(), ud.daemonCfg.Executable)
+		if checkError(err) {
+			// return
+		}
+
+		err = ud.daemon.Stop()
+		if !strings.Contains(err.Error(), "does not exist as an installed service") && checkError(err) {
+			// return
+		}
+
+		err = ud.daemon.Install()
+		if checkError(err) {
+			// return
+		}
+
+		err = ud.daemon.Start()
+		if checkError(err) {
+			return
+		}
+		log.Printf("HYV Updater Service started")
+
+		err = ad.daemon.Stop()
+		if !strings.Contains(err.Error(), "does not exist as an installed service") && checkError(err) {
 			// return
 		}
 
@@ -144,11 +172,6 @@ func main() {
 			// return
 		}
 
-		err = ad.daemon.Stop()
-		if checkError(err) {
-			// return
-		}
-
 		err = ad.daemon.Install()
 		if checkError(err) {
 			// return
@@ -158,31 +181,31 @@ func main() {
 		if checkError(err) {
 			return
 		}
-		log.Printf("Service started")
-		return
-	} else {
+		log.Printf("HYV Agent Service started")
 
-		go func() {
-			err = ad.checkForUpdates()
-			if checkError(err) {
-				// return
-			}
-			t := time.NewTicker(time.Hour * 25)
-			for {
-				select {
-				case <-t.C:
-					err = ad.checkForUpdates()
-					if checkError(err) {
-						// return
-					}
+		return
+	}
+
+	go func() {
+		err = ad.checkForUpdates()
+		if checkError(err) {
+			// return
+		}
+		t := time.NewTicker(time.Hour * 25)
+		for {
+			select {
+			case <-t.C:
+				err = ad.checkForUpdates()
+				if checkError(err) {
+					// return
 				}
 			}
-		}()
-
-		err = ud.daemon.Run()
-		if checkError(err) {
-			return
 		}
+	}()
+
+	err = ud.daemon.Run()
+	if checkError(err) {
+		return
 	}
 }
 
@@ -265,6 +288,7 @@ func (d *updaterDaemon) installAgent() (err error) {
 }
 
 func (d *agentDaemon) checkForUpdates() (err error) {
+	log.Print("Checking for updates")
 	maxRetryWait, err := time.ParseDuration("8h")
 	if checkError(err) {
 		return
