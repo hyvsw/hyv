@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -43,26 +45,26 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	}
 
 	var q string
-	log.Printf("Agent (%d) with serial '%s' and version '%s' (len: %d)", cd.ID, cd.Serial, cd.Version.String(), len(cd.Version.String()))
+	log.Printf("Agent (%d) with serial '%s', hyv_uuid '%s', and version '%s' (len: %d)", cd.ID, cd.Serial, cd.HyvID, cd.Version.String(), len(cd.Version.String()))
 
 	if cd.Serial != "" {
-		q = `SELECT id FROM agents WHERE serial = $1`
-		err = d.db.QueryRowContext(context.Background(), q, cd.Serial).Scan(&cd.ID)
+		q = `SELECT id FROM agents WHERE hyv_uuid = $1`
+		err = d.db.QueryRowContext(context.Background(), q, cd.HyvID).Scan(&cd.ID)
 		if checkError(err) {
 			return
 		}
 
-		q = `UPDATE agents SET version = $1 WHERE serial = $2`
-		_, err = d.db.ExecContext(context.Background(), q, cd.Version.String(), cd.Serial)
+		q = `UPDATE agents SET version = $1 WHERE hyv_uuid = $2`
+		_, err = d.db.ExecContext(context.Background(), q, cd.Version.String(), cd.HyvID)
 		if checkError(err) {
 			return
 		}
 
-		log.Printf("restoring ID %d to agent with serial '%s'", cd.ID, cd.Serial)
+		log.Printf("restoring ID %d to agent with hyv_uuid '%s'", cd.ID, cd.HyvID)
 	}
 
 	if cd.ID == 0 {
-		log.Printf("Agent with serial '%s' checked in with invalid id 0", cd.Serial)
+		log.Printf("Agent with serial '%s' and hyv_uuid '%s' checked in with invalid id 0", cd.Serial, cd.HyvID)
 
 		return
 		// q = "INSERT INTO agents (serial, os) VALUES ($1,$2) RETURNING id"
@@ -149,8 +151,10 @@ func (d *serverDaemon) getLatestAgentVersion() {
 
 	err := d.db.QueryRowContext(context.Background(), `SELECT major, minor, patch FROM versions WHERE app = 'agent' 
 		ORDER BY major desc, minor desc, patch desc LIMIT 1`).Scan(&major, &minor, &patch)
-	if checkError(err) {
-		return
+	if !errors.Is(err, sql.ErrNoRows) {
+		if checkError(err) {
+			return
+		}
 	}
 
 	d.currentAgentVersionLocker.Lock()
@@ -208,11 +212,6 @@ func (d *serverDaemon) systemDataHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	var assignedID int
-
-	if cd.Serial == "" {
-		log.Print("blank serial is unacceptable")
-		return
-	}
 
 	// q := "INSERT INTO agents (id, serial, os, hostname) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE os = ?, hostname = ?"
 	q := `INSERT INTO agents (serial, os, host_name, system_data,hyv_uuid) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (hyv_uuid) DO UPDATE SET os = $6, host_name = $7, system_data = $8, hyv_uuid = $9  RETURNING id`

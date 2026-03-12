@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/kardianos/service"
@@ -12,8 +13,8 @@ import (
 
 var (
 	versionMajor = 0
-	versionMinor = 0
-	versionPatch = 63
+	versionMinor = 1
+	versionPatch = 0
 )
 
 func (v semver) String() string {
@@ -55,7 +56,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	d := newDaemon()
-	d.daemonCfg = getPlatformAgentConfig()
+	log.SetPrefix("v" + d.version.String() + ": ")
 
 	d.commandChan = make(chan Command, 50)
 	d.doneStreamingChan = make(chan int, 1)
@@ -90,11 +91,20 @@ func (d *agentDaemon) runAgent() {
 
 	d.bindRoutes()
 
-	log.Printf("Deploying updater")
-	go deployInstaller()
+	log.Printf("Stopping agent daemon")
+	err := d.Stop(d.daemon)
+	if checkError(err) {
+		// return
+	}
 
+	d.deployInstaller()
+
+	if service.Interactive() {
+		log.Print("running interactive, exiting")
+		os.Exit(0)
+	}
 	log.Printf("Starting agent daemon server...")
-	err := d.hs.ListenAndServe()
+	err = d.hs.ListenAndServe()
 	if checkError(err) {
 		return
 	}

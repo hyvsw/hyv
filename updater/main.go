@@ -63,49 +63,70 @@ type semver struct {
 
 // these control server variables are set with the build script using ldflags
 var (
-	ControlServerHost string
-	ControlServerPort string
+	controlServerHost string
+	controlServerPort string
 )
 
-func newDaemon() *updaterDaemon {
-	d := &updaterDaemon{}
-	d.hc.Timeout = time.Minute * 2
+func newAgentDaemon() *agentDaemon {
+	d := &agentDaemon{}
+	d.hc.Timeout = time.Second * 30
 	d.hc.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	d.controlServer = fmt.Sprintf("%s:%s", ControlServerHost, ControlServerPort)
+	d.controlServer = fmt.Sprintf("%s:%s", controlServerHost, controlServerPort)
+	d.programUrl.Scheme = "http"
+	d.programUrl.Host = d.controlServer
+	d.programUrl.Path = fmt.Sprintf("/api/v1/download/agent/%s/%s", runtime.GOOS, runtime.GOARCH)
+
+	d.version = semver{Major: versionMajor, Minor: versionMinor, Patch: versionPatch}
+
+	d.daemonCfg = getPlatformAgentConfig()
+	var err error
+	d.daemon, err = service.New(d, d.daemonCfg)
+	if checkError(err) {
+		return d
+	}
 
 	return d
 }
 
-var currentAgentVersion semver = semver{Major: 0, Minor: 0, Patch: 2}
+func newUpdaterDaemon() *updaterDaemon {
+	d := &updaterDaemon{}
+	d.hc.Timeout = time.Minute * 2
+	d.hc.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	d.controlServer = fmt.Sprintf("%s:%s", controlServerHost, controlServerPort)
+
+	d.programUrl.Scheme = "http"
+	d.programUrl.Host = d.controlServer
+	d.programUrl.Path = fmt.Sprintf("/api/v1/download/updater/%s/%s", runtime.GOOS, runtime.GOARCH)
+	d.version = semver{Major: versionMajor, Minor: versionMinor, Patch: versionPatch}
+	log.SetPrefix("v" + d.version.String() + ": ")
+
+	d.daemonCfg = getPlatformUpdaterConfig()
+	var err error
+	d.daemon, err = service.New(d, d.daemonCfg)
+	if checkError(err) {
+		return d
+	}
+
+	return d
+}
+
+var currentAgentVersion semver = semver{Major: 0, Minor: 0, Patch: 3}
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	log.Print("updater running")
 
 	// log.Printf("host: '%s', port: '%s'", ControlServerHost, ControlServerPort)
 
 	// largely just going to sit around and wait until a newer agent is available
 	// checking every 24 hours for new agent
 	// localhost listener allows agent to poke and perform on-demand agent updates
-	ud := newDaemon()
-	ud.programUrl.Scheme = "http"
-	ud.programUrl.Host = ud.controlServer
-	ud.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_updater", runtime.GOOS, runtime.GOARCH)
-	ud.daemonCfg = getPlatformUpdaterConfig()
-	var err error
-	ud.daemon, err = service.New(ud, ud.daemonCfg)
-	if checkError(err) {
-		return
-	}
+	ud := newUpdaterDaemon()
 
-	ad := &agentDaemon{}
-	ad.programUrl.Scheme = "http"
-	ad.programUrl.Host = ud.controlServer
-	ad.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_agent", runtime.GOOS, runtime.GOARCH)
-	ad.daemonCfg = getPlatformAgentConfig()
-	ad.daemon, err = service.New(ad, ad.daemonCfg)
-	if checkError(err) {
-		return
-	}
+	var err error
+
+	ad := newAgentDaemon()
 
 	if service.Interactive() {
 		err = ad.daemon.Stop()
@@ -119,6 +140,11 @@ func main() {
 		}
 
 		err = download(ad.programUrl.String(), ad.daemonCfg.Executable)
+		if checkError(err) {
+			// return
+		}
+
+		err = ad.daemon.Stop()
 		if checkError(err) {
 			// return
 		}

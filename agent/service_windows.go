@@ -13,6 +13,7 @@ func getPlatformAgentConfig() *service.Config {
 		Description:      "HYV Agent",
 		Executable:       "C:\\ProgramData\\hyv\\hyv_agent.exe",
 		WorkingDirectory: "C:\\Windows\\System32",
+		// Logs found in Event Viewer
 	}
 }
 
@@ -23,5 +24,6 @@ func getPlatformUpdaterConfig() *service.Config {
 		Description:      "HYV Updater",
 		Executable:       "C:\\ProgramData\\hyv\\hyv_updater.exe",
 		WorkingDirectory: "C:\\Windows\\System32",
+		// Logs found in Event Viewer
 	}
 }

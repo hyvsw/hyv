@@ -103,6 +103,8 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 		os.Getenv("HYV_CONTROL_SERVER_PORT"),
 	)
 
+	var bytesWritten int
+
 	for _, oa := range osarches {
 
 		extension := ""
@@ -122,22 +124,41 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 
 		cmd := exec.Command("/usr/local/go/bin/go", "build", "-buildvcs=false", "-o", staticDestDir, "-ldflags", ldflags)
 		cmd.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", oa.os), fmt.Sprintf("GOARCH=%s", oa.arch))
-		agentPath, err := filepath.Abs("../agent")
+		appPath, err := filepath.Abs(fmt.Sprintf("../%s", app))
 		if checkError(err) {
 			return
 		}
-		cmd.Dir = agentPath
+		cmd.Dir = appPath
 
-		log.Printf("build: %#v", cmd.Args)
+		// log.Printf("app directory: '%s'", cmd.Dir)
+
+		// log.Printf("build: %#v", cmd.Args)
 
 		out, err := cmd.CombinedOutput()
 		if checkError(err) {
 			log.Printf("out: %s", string(out))
+			n, err := w.Write([]byte(fmt.Sprintf("error while building '%s' for '%s' for '%s", app, oa.os, oa.arch)))
+			if checkError(err) {
+				return
+			}
+			n, err = w.Write(out)
+			if checkError(err) {
+				return
+			}
+			bytesWritten += n
+			w.Write([]byte("\n"))
 			return
 		}
 
 		d.getLatestAgentVersion()
 
-		log.Printf("done building: %s", string(out))
+		if len(out) > 0 {
+			log.Printf("build completed with output: %s", string(out))
+		} else {
+			log.Printf("successfully built '%s' for '%s' for '%s'", app, oa.os, oa.arch)
+		}
+	}
+	if bytesWritten == 0 {
+		w.Write([]byte("No errors during builds"))
 	}
 }

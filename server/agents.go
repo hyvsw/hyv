@@ -38,7 +38,7 @@ type agent struct {
 }
 
 func (d *serverDaemon) getAgents(limit, skip int) []*agent {
-	q := "SELECT id, client_id, host_name, os, serial, system_data, streaming_activity FROM agents WHERE id NOT IN (select id FROM deleted_agents) ORDER BY host_name asc LIMIT $1 OFFSET $2"
+	q := "SELECT id, client_id, host_name, os, COALESCE(serial, ''), system_data, streaming_activity FROM agents WHERE id NOT IN (select id FROM deleted_agents) ORDER BY host_name asc LIMIT $1 OFFSET $2"
 	rows, err := d.db.QueryContext(context.Background(), q, limit, skip)
 	if checkError(err) {
 		return nil
@@ -66,7 +66,7 @@ func (d *serverDaemon) getAgentByID(id int) (agent, error) {
 	a, ok := d.agents[id]
 	if !ok {
 		a.LatestActivityLocker = &sync.RWMutex{}
-		q := "SELECT id, client_id, host_name, serial, os, system_data, streaming_activity FROM agents WHERE id = $1"
+		q := "SELECT id, client_id, host_name, COALESCE(serial, ''), os, system_data, streaming_activity FROM agents WHERE id = $1"
 		err := d.db.QueryRowContext(context.Background(), q, id).Scan(&a.ID, &a.ClientID, &a.Name, &a.Serial, &a.OS, &a.SystemData, &a.StreamingActivity)
 		if checkError(err) {
 			if errors.Is(err, sql.ErrNoRows) {

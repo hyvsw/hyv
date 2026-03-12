@@ -15,6 +15,8 @@ func getPlatformAgentConfig() *service.Config {
 		Description:      "HYV Agent",
 		Executable:       "/Applications/hyv/hyv_agent",
 		WorkingDirectory: "/Applications/hyv",
+		// Logs found in /var/log/hyv_agent.stdout.log
+		// Logs found in /var/log/hyv_agent.stderr.log
 	}
 }
 
@@ -25,5 +27,7 @@ func getPlatformUpdaterConfig() *service.Config {
 		Description:      "HYV Updater",
 		Executable:       "/Applications/hyv/hyv_updater",
 		WorkingDirectory: "/Applications/hyv",
+		// Logs found in /var/log/hyv_updater.stdout.log
+		// Logs found in /var/log/hyv_updater.stderr.log
 	}
 }

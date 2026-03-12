@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/kardianos/service"
@@ -26,13 +27,16 @@ func newDaemon() *agentDaemon {
 	d.controlServer = fmt.Sprintf("%s:%s", controlServerHost, controlServerPort)
 	d.programUrl.Scheme = "http"
 	d.programUrl.Host = d.controlServer
-	extension := ""
-	if runtime.GOOS == "windows" {
-		extension = ".exe"
-	}
-	d.programUrl.Path = fmt.Sprintf("/static/downloads/%s/%s/hyv_updater%s", runtime.GOOS, runtime.GOARCH, extension)
+	d.programUrl.Path = fmt.Sprintf("/api/v1/downloads/agent/%s/%s", runtime.GOOS, runtime.GOARCH)
 
 	d.version = semver{Major: versionMajor, Minor: versionMinor, Patch: versionPatch}
+
+	d.daemonCfg = getPlatformAgentConfig()
+	var err error
+	d.daemon, err = service.New(d, d.daemonCfg)
+	if checkError(err) {
+		return d
+	}
 
 	return d
 }
@@ -55,19 +59,16 @@ func (d *agentDaemon) Stop(s service.Service) error {
 	return nil
 }
 
-func deployInstaller() {
-	d := newDaemon()
-	d.daemonCfg = getPlatformUpdaterConfig()
+func (d *agentDaemon) deployInstaller() {
+	log.Printf("deploying agent installer")
 	var err error
-
-	d.daemon, err = service.New(d, d.daemonCfg)
-	if checkError(err) {
-		return
-	}
 
 	err = d.daemon.Install()
 	if checkError(err) {
-		return
+		if !strings.Contains(err.Error(), "Init already exists") &&
+			!strings.Contains(err.Error(), "service hyv_agent already exists") {
+			return
+		}
 	}
 
 	err = d.daemon.Start()
@@ -78,7 +79,7 @@ func deployInstaller() {
 
 func (d *agentDaemon) downloadUpdater() (err error) {
 	ud := newDaemon()
-	ud.programUrl.Path = fmt.Sprintf("/static/downloads/updater/%s/%s/hyv_updater", runtime.GOOS, runtime.GOARCH)
+	ud.programUrl.Path = fmt.Sprintf("/api/v1/downloads/updater/%s/%s", runtime.GOOS, runtime.GOARCH)
 	ud.daemonCfg = getPlatformUpdaterConfig()
 
 	log.Printf("Attempting to download agent from '%s'", ud.programUrl.String())
@@ -115,6 +116,12 @@ func (d *agentDaemon) downloadUpdater() (err error) {
 	err = f.Close()
 	if checkError(err) {
 		return
+	}
+
+	log.Printf("Stopping existing hyv_updater daemon")
+	err = ud.daemon.Stop()
+	if checkError(err) {
+		// return
 	}
 
 	log.Printf("Installing hyv_updater daemon")

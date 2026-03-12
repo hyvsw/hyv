@@ -21,8 +21,14 @@ func getOrCreateAgentID() (string, error) {
 		return string(id), nil
 	}
 	newID := uuid.New().String()
-	os.MkdirAll(filepath.Dir(path), 0o644)
-	os.WriteFile(path, []byte(newID), 0o644)
+	err = os.MkdirAll(filepath.Dir(path), 0o644)
+	if checkError(err) {
+		return "", err
+	}
+	err = os.WriteFile(path, []byte(newID), 0o644)
+	if checkError(err) {
+		return "", err
+	}
 	return newID, nil
 }
 

@@ -12,6 +12,7 @@ func getPlatformAgentConfig() *service.Config {
 		DisplayName: "HYV Agent",
 		Description: "HYV Agent",
 		Executable:  "/usr/bin/local/hyv/hyv_agent",
+		// Logs found in /var/log/hyv_agent.log
 	}
 }
 
@@ -21,5 +22,6 @@ func getPlatformUpdaterConfig() *service.Config {
 		DisplayName: "HYV Agent",
 		Description: "HYV Agent",
 		Executable:  "/usr/bin/local/hyv/hyv_updater",
+		// Logs found in /var/log/hyv_updater.log
 	}
 }
