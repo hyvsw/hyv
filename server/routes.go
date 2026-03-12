@@ -33,7 +33,7 @@ func (d *serverDaemon) bindRoutes() {
 	d.router.POST("/api/v1/sendSystemData", d.systemDataHandler)
 
 	d.router.GET("/api/v1/check/version/:App/:Major/:Minor/:Patch", d.versionCheckHandler)
-	d.router.GET("/api/v1/build/:App", d.buildAppHandler)
+	d.router.GET("/api/v1/build/:App/:vMajor/:vMinor/:vPatch", d.buildAppHandler)
 	d.router.GET("/api/v1/download/:App/:Os/:Arch", d.downloadAppHandler)
 
 	d.router.POST("/api/v1/sendCommandResult", d.commandResultHandler)

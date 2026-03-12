@@ -14,8 +14,8 @@ import (
 
 var (
 	versionMajor = 0
-	versionMinor = 1
-	versionPatch = 6
+	versionMinor = 2
+	versionPatch = 0
 )
 
 func (v semver) String() string {

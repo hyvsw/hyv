@@ -74,6 +74,9 @@ func (d *serverDaemon) versionCheckHandler(w http.ResponseWriter, req *http.Requ
 
 func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	app := params.ByName("App")
+	vMajor := params.ByName("vMajor")
+	vMinor := params.ByName("vMinor")
+	vPatch := params.ByName("vPatch")
 
 	switch app {
 	case "agent":
@@ -99,9 +102,12 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 	osarches = append(osarches, osarch{os: "windows", arch: "arm64"})
 
 	ldflags := fmt.Sprintf(
-		`-X main.controlServerHost=%s -X main.controlServerPort=%s`,
+		`-X main.controlServerHost=%s -X main.controlServerPort=%s -X main.versionMajor=%s -X main.versionMinor=%s -X main.versionPatch=%s`,
 		os.Getenv("HYV_CONTROL_SERVER_HOST"),
 		os.Getenv("HYV_CONTROL_SERVER_PORT"),
+		vMajor,
+		vMinor,
+		vPatch,
 	)
 
 	var bytesWritten int
@@ -150,6 +156,8 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 			w.Write([]byte("\n"))
 			return
 		}
+
+		d.updateAppVersion(app, vMajor, vMinor, vPatch)
 
 		d.getLatestAgentVersion()
 

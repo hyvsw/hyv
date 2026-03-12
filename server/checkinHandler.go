@@ -143,6 +143,24 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	}
 }
 
+// Create App Release Group // declare purpose (test group A, test client, Release Candidate testing, regression testing)
+// Add Agents to Release Group
+// Remove Agents from Release Group
+// Update Release Group to new Version
+
+func (d *serverDaemon) createAppRelease(app string, major, minor, patch int) {
+	// the idea here is we have versions that we pin and apply to groups of agents
+	// this is largely for staged rollouts and testing
+	// a given version points to a git commit, and groups of agents have pinned version membership
+}
+
+func (d *serverDaemon) updateAppVersion(app string, major, minor, patch int) {
+	_, err := d.db.ExecContext(context.Background(), `UPDATE versions SET major = $1, minor = $2, patch $3 WHERE app = $4`, app, major, minor, patch)
+	if checkError(err) {
+		return
+	}
+}
+
 func (d *serverDaemon) getLatestAgentVersion() {
 	var (
 		major int
