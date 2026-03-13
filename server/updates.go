@@ -12,11 +12,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-var (
-	currentAgentVersion   semver = semver{Major: 0, Minor: 0, Patch: 62}
-	currentUpdaterVersion semver = semver{Major: 0, Minor: 0, Patch: 5}
-)
-
 type semver struct {
 	Major int
 	Minor int
@@ -62,21 +57,37 @@ func (d *serverDaemon) versionCheckHandler(w http.ResponseWriter, req *http.Requ
 
 	switch params.ByName("App") {
 	case "updater":
-		if version.isOlderThan(currentUpdaterVersion) {
+		d.currentAgentVersionLocker.RLock()
+		if version.isOlderThan(d.currentUpdaterVersion) {
 			w.WriteHeader(201)
 		}
+		d.currentAgentVersionLocker.RUnlock()
 	case "agent":
-		if version.isOlderThan(currentAgentVersion) {
+		d.currentAgentVersionLocker.RLock()
+		if version.isOlderThan(d.currentAgentVersion) {
 			w.WriteHeader(201)
 		}
+		d.currentAgentVersionLocker.RUnlock()
 	}
 }
 
 func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	app := params.ByName("App")
-	vMajor := params.ByName("vMajor")
-	vMinor := params.ByName("vMinor")
-	vPatch := params.ByName("vPatch")
+	vMajor, err := strconv.Atoi(params.ByName("vMajor"))
+	if checkError(err) {
+		return
+	}
+	vMinor, err := strconv.Atoi(params.ByName("vMinor"))
+	if checkError(err) {
+		return
+	}
+	vPatch, err := strconv.Atoi(params.ByName("vPatch"))
+	if checkError(err) {
+		return
+	}
+
+	d.updateLatestAppVersion(app, vMajor, vMinor, vPatch)
+	d.getLatestAgentVersion()
 
 	switch app {
 	case "agent":
@@ -102,12 +113,12 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 	osarches = append(osarches, osarch{os: "windows", arch: "arm64"})
 
 	ldflags := fmt.Sprintf(
-		`-X main.controlServerHost=%s -X main.controlServerPort=%s -X main.versionMajor=%s -X main.versionMinor=%s -X main.versionPatch=%s`,
+		`-X main.controlServerHost=%s -X main.controlServerPort=%s -X main.versionMajorStr=%s -X main.versionMinorStr=%s -X main.versionPatchStr=%s`,
 		os.Getenv("HYV_CONTROL_SERVER_HOST"),
 		os.Getenv("HYV_CONTROL_SERVER_PORT"),
-		vMajor,
-		vMinor,
-		vPatch,
+		strconv.Itoa(vMajor),
+		strconv.Itoa(vMinor),
+		strconv.Itoa(vPatch),
 	)
 
 	var bytesWritten int
@@ -156,10 +167,6 @@ func (d *serverDaemon) buildAppHandler(w http.ResponseWriter, req *http.Request,
 			w.Write([]byte("\n"))
 			return
 		}
-
-		d.updateAppVersion(app, vMajor, vMinor, vPatch)
-
-		d.getLatestAgentVersion()
 
 		if len(out) > 0 {
 			log.Printf("build completed with output: %s", string(out))

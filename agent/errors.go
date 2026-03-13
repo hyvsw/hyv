@@ -13,14 +13,13 @@ import (
 func checkError(err error) bool {
 	if err != nil {
 		PrintErrorN(err, 1)
-		//log.Print(err)
+		// log.Print(err)
 		return true
 	}
 	return false
 }
 
 func ErrorCaller() {
-
 	for i := 0; i < 10; i++ {
 		_, fileName, lineNum, _ := runtime.Caller(i)
 		if fileName == "" {
@@ -59,7 +58,6 @@ func GetFileAndLine(offset int) (string, int) {
 }
 
 func LogError(db *sql.DB, err error) {
-
 	var (
 		app  string
 		file string
@@ -83,7 +81,6 @@ func LogError(db *sql.DB, err error) {
 }
 
 func LogErrorN(db *sql.DB, err error, callerOffset int) {
-
 	var (
 		app  string
 		file string
@@ -111,9 +108,8 @@ func LogErrorN(db *sql.DB, err error, callerOffset int) {
 }
 
 func PrintErrorN(err error, callerOffset int) {
-
 	var (
-		//app  string
+		// app  string
 		file string
 		line int
 	)
@@ -122,5 +118,4 @@ func PrintErrorN(err error, callerOffset int) {
 	file = filepath.Base(file)
 
 	log.Printf("%s:%d: %s\n", file, line, err.Error())
-
 }

@@ -24,6 +24,9 @@ type serverDaemon struct {
 	currentAgentVersion       semver
 	currentAgentVersionLocker *sync.RWMutex
 
+	currentUpdaterVersion       semver
+	currentUpdaterVersionLocker *sync.RWMutex
+
 	agentsLocker *sync.RWMutex
 	agents       map[int]agent
 }

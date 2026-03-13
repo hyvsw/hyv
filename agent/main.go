@@ -13,9 +13,12 @@ import (
 )
 
 var (
-	versionMajor = 0
-	versionMinor = 2
-	versionPatch = 0
+	versionMajor    = 0
+	versionMinor    = 2
+	versionPatch    = 0
+	versionMajorStr = ""
+	versionMinorStr = ""
+	versionPatchStr = ""
 )
 
 func (v semver) String() string {

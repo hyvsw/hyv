@@ -21,3 +21,4 @@ server/hyv_server
 *.xml
 *.json
 .ds_store
+tags

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +22,20 @@ type semver struct {
 }
 
 func newDaemon() *agentDaemon {
+	var err error
+	versionMajor, err = strconv.Atoi(versionMajorStr)
+	if checkError(err) {
+		return nil
+	}
+	versionMinor, err = strconv.Atoi(versionMinorStr)
+	if checkError(err) {
+		return nil
+	}
+	versionPatch, err = strconv.Atoi(versionPatchStr)
+	if checkError(err) {
+		return nil
+	}
+
 	d := &agentDaemon{}
 	d.hc.Timeout = time.Second * 30
 	d.hc.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
@@ -32,7 +47,6 @@ func newDaemon() *agentDaemon {
 	d.version = semver{Major: versionMajor, Minor: versionMinor, Patch: versionPatch}
 
 	d.daemonCfg = getPlatformAgentConfig()
-	var err error
 	d.daemon, err = service.New(d, d.daemonCfg)
 	if checkError(err) {
 		return d

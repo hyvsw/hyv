@@ -124,7 +124,7 @@ func (d *serverDaemon) checkinHandler(w http.ResponseWriter, r *http.Request, pa
 	cr.StreamActivity = a.StreamingActivity
 
 	d.currentAgentVersionLocker.RLock()
-	currentAgentVersion = d.currentAgentVersion
+	currentAgentVersion := d.currentAgentVersion
 	d.currentAgentVersionLocker.RUnlock()
 
 	if cd.Version.isOlderThan(currentAgentVersion) {
@@ -154,11 +154,12 @@ func (d *serverDaemon) createAppRelease(app string, major, minor, patch int) {
 	// a given version points to a git commit, and groups of agents have pinned version membership
 }
 
-func (d *serverDaemon) updateAppVersion(app string, major, minor, patch int) {
-	_, err := d.db.ExecContext(context.Background(), `UPDATE versions SET major = $1, minor = $2, patch $3 WHERE app = $4`, app, major, minor, patch)
+func (d *serverDaemon) updateLatestAppVersion(app string, major, minor, patch int) {
+	_, err := d.db.ExecContext(context.Background(), `UPDATE versions SET major = $1, minor = $2, patch = $3 WHERE app = $4`, major, minor, patch, app)
 	if checkError(err) {
 		return
 	}
+	d.getLatestAgentVersion()
 }
 
 func (d *serverDaemon) getLatestAgentVersion() {
