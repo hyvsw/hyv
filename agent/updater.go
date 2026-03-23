@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"strconv"
@@ -21,7 +22,36 @@ type semver struct {
 	Patch int
 }
 
-func newDaemon() *agentDaemon {
+type updaterDaemon struct {
+	daemonCfg     *service.Config
+	daemon        service.Service
+	hc            http.Client
+	controlServer string
+	programUrl    url.URL
+	version       semver
+}
+
+func newUpdaterDaemon() *updaterDaemon {
+	var err error
+
+	d := &updaterDaemon{}
+	d.hc.Timeout = time.Second * 30
+	d.hc.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	d.controlServer = fmt.Sprintf("%s:%s", controlServerHost, controlServerPort)
+	d.programUrl.Scheme = "http"
+	d.programUrl.Host = d.controlServer
+	d.programUrl.Path = fmt.Sprintf("/api/v1/download/updater/%s/%s", runtime.GOOS, runtime.GOARCH)
+
+	d.daemonCfg = getPlatformUpdaterConfig()
+	d.daemon, err = service.New(d, d.daemonCfg)
+	if checkError(err) {
+		return d
+	}
+
+	return d
+}
+
+func newAgentDaemon() *agentDaemon {
 	var err error
 	versionMajor, err = strconv.Atoi(versionMajorStr)
 	if checkError(err) {
@@ -74,7 +104,7 @@ func (d *agentDaemon) deployInstaller() {
 }
 
 func (d *agentDaemon) downloadUpdater() (err error) {
-	ud := newDaemon()
+	ud := newUpdaterDaemon()
 	ud.programUrl.Path = fmt.Sprintf("/api/v1/download/updater/%s/%s", runtime.GOOS, runtime.GOARCH)
 	ud.daemonCfg = getPlatformUpdaterConfig()
 
@@ -90,9 +120,15 @@ func (d *agentDaemon) downloadUpdater() (err error) {
 	}
 	defer resp.Body.Close()
 
+	log.Printf("Stopping existing hyv_updater daemon")
+	err = ud.daemon.Stop()
+	if checkError(err) {
+		// return
+	}
+
 	log.Printf("Received %s file", BytesToHuman(int64(len(bodyBytes))))
 
-	f, err := os.Create(ud.installPath)
+	f, err := os.Create(ud.daemonCfg.Executable)
 	if checkError(err) {
 		return
 	}
@@ -102,7 +138,7 @@ func (d *agentDaemon) downloadUpdater() (err error) {
 		return
 	}
 
-	log.Printf("Wrote %s to file at '%s'", BytesToHuman(int64(n)), d.installPath)
+	log.Printf("Wrote %s to file at '%s'", BytesToHuman(int64(n)), ud.daemonCfg.Executable)
 
 	err = f.Sync()
 	if checkError(err) {
@@ -112,12 +148,6 @@ func (d *agentDaemon) downloadUpdater() (err error) {
 	err = f.Close()
 	if checkError(err) {
 		return
-	}
-
-	log.Printf("Stopping existing hyv_updater daemon")
-	err = ud.daemon.Stop()
-	if checkError(err) {
-		// return
 	}
 
 	log.Printf("Installing hyv_updater daemon")

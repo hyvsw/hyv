@@ -61,7 +61,7 @@ func (d *agentDaemon) upgradeAgent() (err error) {
 
 	log.Printf("Received %s file", BytesToHuman(int64(len(bodyBytes))))
 
-	ud := newDaemon()
+	ud := newUpdaterDaemon()
 	ud.daemonCfg = getPlatformUpdaterConfig()
 
 	// log.Printf("daemon stop")

@@ -38,7 +38,6 @@ type agentDaemon struct {
 	hc                    http.Client
 	hs                    http.Server
 	programUrl            url.URL
-	installPath           string
 	version               semver
 	debug                 bool
 	controlServer         string
@@ -68,7 +67,7 @@ func main() {
 		log.SetOutput(logFile)
 	}
 
-	d := newDaemon()
+	d := newAgentDaemon()
 	log.SetPrefix("v" + d.version.String() + ": ")
 
 	d.commandChan = make(chan Command, 50)
@@ -81,6 +80,8 @@ func main() {
 	if checkError(err) {
 		return
 	}
+
+	log.Printf("Got HyvID '%s'", d.HyvID)
 
 	go d.commandProcessor()
 
@@ -96,6 +97,14 @@ func main() {
 	if checkError(err) {
 		return
 	}
+}
+
+func (d *updaterDaemon) Start(s service.Service) error {
+	return nil
+}
+
+func (d *updaterDaemon) Stop(s service.Service) error {
+	return nil
 }
 
 func (d *agentDaemon) Start(s service.Service) error {

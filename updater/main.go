@@ -131,55 +131,65 @@ func main() {
 
 	if service.Interactive() {
 
+		log.Print("Stopping hyv_updater service")
 		err = ud.daemon.Stop()
+		if err != nil && !strings.Contains(err.Error(), "does not exist as an installed service") && checkError(err) {
+			// return
+		}
+
+		log.Print("Uninstalling hyv_updater service")
+		err = ud.daemon.Uninstall()
 		if checkError(err) {
 			// return
 		}
 
+		log.Print("Downloading hyv_updater")
 		err = download(ud.programUrl.String(), ud.daemonCfg.Executable)
 		if checkError(err) {
 			// return
 		}
 
-		err = ud.daemon.Stop()
-		if !strings.Contains(err.Error(), "does not exist as an installed service") && checkError(err) {
-			// return
-		}
-
+		log.Print("Installing hyv_updater service")
 		err = ud.daemon.Install()
 		if checkError(err) {
 			// return
 		}
 
+		log.Print("Starting hyv_updater service")
 		err = ud.daemon.Start()
 		if checkError(err) {
-			return
+			// return
 		}
 		log.Printf("HYV Updater Service started")
 
+		log.Print("Stopping hyv_agent service")
 		err = ad.daemon.Stop()
 		if err != nil && !strings.Contains(err.Error(), "does not exist as an installed service") && checkError(err) {
 			// return
 		}
 
+		log.Print("Uninstalling hyv_agent service")
 		err = ad.daemon.Uninstall()
 		if checkError(err) {
 			// return
 		}
 
+		log.Print("Downloading hyv_agent")
 		err = download(ad.programUrl.String(), ad.daemonCfg.Executable)
 		if checkError(err) {
 			// return
 		}
 
+		log.Print("Installing hyv_agent service")
 		err = ad.daemon.Install()
 		if checkError(err) {
 			// return
 		}
 
+		log.Print("Starting hyv_agent service")
 		err = ad.daemon.Start()
 		if checkError(err) {
-			return
+			// return
 		}
 		log.Printf("HYV Agent Service started")
 

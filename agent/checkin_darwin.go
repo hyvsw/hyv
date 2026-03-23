@@ -207,11 +207,17 @@ func (d *agentDaemon) checkin() {
 		data.Serial = sd.SPHardwareDataType[0].SerialNumber
 	}
 
+	var err error
+	data.HyvID, err = getOrCreateAgentID()
+	if checkError(err) {
+		return
+	}
+
 	gob.Register(data)
 
 	b := &bytes.Buffer{}
 	ge := gob.NewEncoder(b)
-	err := ge.Encode(data)
+	err = ge.Encode(data)
 	if checkError(err) {
 		return
 	}
@@ -273,10 +279,16 @@ func (d *agentDaemon) getSystemData() *AppleSystemProfilerOutput {
 }
 
 func (d *agentDaemon) sendSystemData() {
+	var err error
 	var data checkinData
 	data.ID = d.ID
 
 	output, err := run("hostname")
+	if checkError(err) {
+		return
+	}
+
+	data.HyvID, err = getOrCreateAgentID()
 	if checkError(err) {
 		return
 	}

@@ -19,17 +19,14 @@ type semver struct {
 }
 
 func (v semver) isOlderThan(sv semver) bool {
-	log.Printf("Checking if '%s' is older than '%s'", v.String(), sv.String())
-	if v.Major < sv.Major {
-		return true
+	// log.Printf("Checking if '%s' is older than '%s'", v.String(), sv.String())
+	if v.Major != sv.Major {
+		return v.Major < sv.Major
 	}
-	if v.Minor < sv.Minor {
-		return true
+	if v.Minor != sv.Minor {
+		return v.Minor < sv.Minor
 	}
-	if v.Patch < sv.Patch {
-		return true
-	}
-	return false
+	return v.Patch < sv.Patch
 }
 
 func (v semver) String() string {
